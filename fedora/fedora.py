@@ -9,7 +9,7 @@ class FedoraObject:
         self.fedora_url = fedora_url
         self.auth = auth
 
-    def ingest(
+    def __ingest(
         self,
         namespace,
         label,
@@ -51,7 +51,7 @@ class FedoraObject:
 
 
 if __name__ == "__main__":
-    # x = FedoraObject().ingest(namespace="test", label="This is a test")
+    # x = FedoraObject().__ingest(namespace="test", label="This is a test")
     x = FedoraObject().add_relationship(
         pid="test:6",
         subject="info:fedora/test:6",
