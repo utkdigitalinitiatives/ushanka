@@ -1,4 +1,5 @@
 import requests
+from urllib.parse import quote
 
 
 class FedoraObject:
@@ -21,8 +22,29 @@ class FedoraObject:
         if r.status_code == 201:
             return r.content
         else:
-            raise Exception(f"Request to ingest object with label `{label}` failed with {r.status_code}.")
+            raise Exception(
+                f"Request to ingest object with label `{label}` failed with {r.status_code}."
+            )
+
+    def add_relationship(self, pid, subject, predicate, obj, is_literal="true"):
+        r = requests.post(
+            f"{self.fedora_url}/fedora/objects/{pid}/relationships/new?subject={quote(subject, safe='')}&predicate={quote(predicate, safe='')}&object={quote(obj, safe='')}&isLiteral=false",
+            auth=self.auth,
+        )
+        if r.status_code == 200:
+            return r.status_code
+        else:
+            raise Exception(
+                f"Unable to add relationship on {pid} with subject={subject}, predicate={predicate}, and object={obj}, and isLiteral as {is_literal}.  Returned {r.status_code}"
+            )
 
 
 if __name__ == "__main__":
-    x = FedoraObject().ingest(namespace="test", label="This is a test")
+    # x = FedoraObject().ingest(namespace="test", label="This is a test")
+    x = FedoraObject().add_relationship(
+        pid="test:6",
+        subject="info:fedora/test:6",
+        predicate="info:fedora/fedora-system:def/relations-external#isMemberOfCollection",
+        obj="info:fedora/islandora:test",
+        is_literal="false",
+    )
