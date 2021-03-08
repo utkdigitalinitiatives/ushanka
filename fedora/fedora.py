@@ -20,7 +20,7 @@ class FedoraObject:
             auth=self.auth,
         )
         if r.status_code == 201:
-            return r.content
+            return r.content.decode("utf-8")
         else:
             raise Exception(
                 f"Request to ingest object with label `{label}` failed with {r.status_code}."
@@ -35,13 +35,16 @@ class FedoraObject:
             return r.status_code
         else:
             raise Exception(
-                f"Unable to add relationship on {pid} with subject={subject}, predicate={predicate}, and object={obj}, and isLiteral as {is_literal}.  Returned {r.status_code}"
+                f"Unable to add relationship on {pid} with subject={subject}, predicate={predicate}, and object={obj}, and isLiteral as {is_literal}.  Returned {r.status_code}."
             )
 
-    def create_digital_object(self):
+    def create_digital_object(self, object_namespace, object_label, collection, object_state="A"):
         # Ingest a new object
+        pid = self.__ingest(object_namespace, object_label, object_state)
         # Add that object to a collection
+        self.add_relationship(pid, f"info:fedora/{pid}", "info:fedora/fedora-system:def/relations-external#isMemberOfCollection", f"info:fedora/{collection}", is_literal="false")
         # Give it a content model
+        self.add_relationship(pid, f"info:fedora/{pid}", "info:fedora/fedora-system:def/model#hasModel", "info:fedora/islandora:binaryObjectCModel", is_literal="false")
         # Version relationships
         # Add the AIP
         # Add the DIP
@@ -51,11 +54,4 @@ class FedoraObject:
 
 
 if __name__ == "__main__":
-    # x = FedoraObject().__ingest(namespace="test", label="This is a test")
-    x = FedoraObject().add_relationship(
-        pid="test:6",
-        subject="info:fedora/test:6",
-        predicate="info:fedora/fedora-system:def/relations-external#isMemberOfCollection",
-        obj="info:fedora/islandora:test",
-        is_literal="false",
-    )
+    x = FedoraObject().create_digital_object("test", "Mark's New Test", "islandora:test")
