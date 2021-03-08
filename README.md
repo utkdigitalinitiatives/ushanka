@@ -1,3 +1,3 @@
-# Sample Module for Adding an AIP and DIP to Fedora 3.8
+# Ushanka
 
-This is sample temporary code for thinking about how we get AIPs and DIPs to Fedora.
+This is a temporary repository for thinking about how to get an finalized AIP and DIP to our instance of Fedora.
