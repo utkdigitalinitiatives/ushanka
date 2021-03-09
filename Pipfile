@@ -8,6 +8,7 @@ black = "*"
 
 [packages]
 requests = "*"
+python-magic = "*"
 
 [requires]
 python_version = "3.8"
