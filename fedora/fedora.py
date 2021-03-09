@@ -16,6 +16,8 @@ class FedoraObject:
         label,
         state="A",
     ):
+        """@todo: Right now this is private, but this should be public if create_digital_object goes to another class.
+        """
         r = requests.post(
             f"{self.fedora_url}/fedora/objects/new?namespace={namespace}&label={label}&state={state}",
             auth=self.auth,
@@ -146,6 +148,8 @@ class FedoraObject:
     def create_digital_object(
         self, object_namespace, object_label, collection, object_state="A"
     ):
+        """@todo: This is temporary code.  Ultimately, this will likely come out and go to its own class and method.
+        """
         # Ingest a new object
         pid = self.__ingest(object_namespace, object_label, object_state)
         # Add that object to a collection
