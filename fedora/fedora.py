@@ -10,14 +10,32 @@ class FedoraObject:
         self.fedora_url = fedora_url
         self.auth = auth
 
-    def __ingest(
+    def ingest(
         self,
         namespace,
         label,
         state="A",
     ):
-        """@todo: Right now this is private, but this should be public if create_digital_object goes to another class.
+        """Creates a new object in Fedora and returns a persistent identifier.
+
+        Args:
+            namespace (str): The namespace of the new persistent identifier.
+            label (str): The label of the new digital object.
+            state (str): The state of the new object. Must be "A" or "I".
+
+        Returns:
+            str: The persistent identifier of the new object.
+
+        Examples:
+            >>> FedoraObject().ingest("test", "My new digital object", "islandora:test")
+            "test:1"
+
         """
+        if state not in ("A", "I"):
+            raise Exception(
+                f"\nState specified for new digital object based on label: {label} is not valid."
+                f"\nMust be 'A' or 'I'."
+            )
         r = requests.post(
             f"{self.fedora_url}/fedora/objects/new?namespace={namespace}&label={label}&state={state}",
             auth=self.auth,
@@ -148,10 +166,9 @@ class FedoraObject:
     def create_digital_object(
         self, object_namespace, object_label, collection, object_state="A"
     ):
-        """@todo: This is temporary code.  Ultimately, this will likely come out and go to its own class and method.
-        """
+        """@todo: This is temporary code.  Ultimately, this will likely come out and go to its own class and method."""
         # Ingest a new object
-        pid = self.__ingest(object_namespace, object_label, object_state)
+        pid = self.ingest(object_namespace, object_label, object_state)
         # Add that object to a collection
         self.add_relationship(
             pid,
