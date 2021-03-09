@@ -163,44 +163,64 @@ class FedoraObject:
                 f"status code: {r.status_code}."
             )
 
-    def create_digital_object(
-        self, object_namespace, object_label, collection, object_state="A"
+
+class BornDigitalObject(FedoraObject):
+    def __init__(
+        self,
+        path,
+        namespace,
+        label,
+        collection,
+        state,
+        fedora="http://localhost:8080",
+        auth=("fedoraAdmin", "fedoraAdmin"),
     ):
-        """@todo: This is temporary code.  Ultimately, this will likely come out and go to its own class and method."""
-        # Ingest a new object
-        pid = self.ingest(object_namespace, object_label, object_state)
-        # Add that object to a collection
-        self.add_relationship(
+        self.path = path
+        self.namespace = namespace
+        self.label = label
+        self.collection = collection
+        self.state = state
+        super().__init__(fedora, auth)
+
+    def add_to_collection(self, pid):
+        """Adds the object to a collection in Fedora."""
+        return self.add_relationship(
             pid,
             f"info:fedora/{pid}",
             "info:fedora/fedora-system:def/relations-external#isMemberOfCollection",
-            f"info:fedora/{collection}",
+            f"info:fedora/{self.collection}",
             is_literal="false",
         )
-        # Give it a content model
-        self.add_relationship(
+
+    def assign_binary_content_model(self, pid):
+        """Assigns binary content model to digital object."""
+        return self.add_relationship(
             pid,
             f"info:fedora/{pid}",
             "info:fedora/fedora-system:def/model#hasModel",
             "info:fedora/islandora:binaryObjectCModel",
             is_literal="false",
         )
-        # Version relationships
+
+    def add_archival_information_package(self):
+        return
+
+    def add_dissemination_information_package(self):
+        return
+
+    def add_technical_metadata(self):
+        return
+
+    def add_descriptive_metadata(self):
+        return
+
+    def new(self):
+        pid = self.ingest(self.namespace, self.label, self.state)
+        self.add_to_collection(pid)
+        self.assign_binary_content_model(pid)
         self.change_versioning(pid, "RELS-EXT", "true")
-        # Add the AIP
-        # Add technical metadata about the AIP
-        # Add the DIP
-        # Give it metadata
-        # Transform DublinCore
-        return f"Successfully created {pid}."
+        return pid
 
 
 if __name__ == "__main__":
-    # x = FedoraObject().create_digital_object(
-    #     "test", "Mark's New Test", "islandora:test"
-    # )
-    x = FedoraObject().add_managed_datastream(
-        "test:10",
-        "AIP",
-        file="Chronicling_COVID-19-20210215T185151Z-001-2aaa349a-12a2-4338-90d1-5097bb989acc.7z",
-    )
+    print(BornDigitalObject("data", "test", "Testing", "islandora:test", "A").new())
