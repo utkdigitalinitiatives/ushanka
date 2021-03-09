@@ -55,6 +55,33 @@ class FedoraObject:
                 f"Unable to add relationship on {pid} with subject={subject}, predicate={predicate}, and object={obj}, and isLiteral as {is_literal}.  Returned {r.status_code}."
             )
 
+    def change_versioning(self, pid, dsid, versionable="false"):
+        """Change versioning of a datastream.
+
+        Args:
+             pid (str): The persistent identifier of the object to which the dsid belongs.
+             dsid (str): The datastream id of the datastream you want to modify.
+             versionable (str): Defaults to "false".  "false" or "true" on whether a datastream is versioned.
+
+        Returns:
+            int: The status code of the request.
+
+        Examples:
+            >>> FedoraObject().change_versioning("test:1", "RELS-EXT", "true")
+            200
+
+        """
+        r = requests.put(
+            f"{self.fedora_url}/fedora/objects/{pid}/datastreams/{dsid}?versionable={versionable}",
+            auth=self.auth,
+        )
+        if r.status_code == 200:
+            return r.status_code
+        else:
+            raise Exception(
+                f"Unable to change versioning of the {dsid} datastream on {pid} to {versionable}.  Returned {r.status_code}."
+            )
+
     def create_digital_object(
         self, object_namespace, object_label, collection, object_state="A"
     ):
@@ -77,11 +104,13 @@ class FedoraObject:
             is_literal="false",
         )
         # Version relationships
+        self.change_versioning(pid, "RELS-EXT", "true")
         # Add the AIP
+        # Add technical metadata about the AIP
         # Add the DIP
         # Give it metadata
         # Transform DublinCore
-        return
+        return f"Successfully created {pid}."
 
 
 if __name__ == "__main__":
