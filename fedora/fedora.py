@@ -53,28 +53,34 @@ class FedoraObject:
 
         Args:
             pid (str): The persistent identifier to the object where you want to add the relationship.
-            subject (str): The subject of the relationship.  This should refer to the pid (for external relationships) or the dsid (for internal relationships). For
+            subject (str): The subject of the relationship.  This should refer to the pid (for external relationships)
+            or the dsid (for internal relationships). For
             predicate (str): The predicate of the new relationship.
             obj (str): The object of the new relationship.  Can refer to a graph or a literal.
-            is_literal (str): This defaults to "true" but can also be "false." It specifies whether the object is a graph or a literal.
+            is_literal (str): This defaults to "true" but can also be "false." It specifies whether the object is a
+                graph or a literal.
 
         Returns:
-            int: The status code of the post request.json
+            int: The status code of the post request.
 
         Examples:
-            >>> FedoraObject().add_relationship(pid="test:6", subject="info:fedora/test:6", predicate="info:fedora/fedora-system:def/relations-external#isMemberOfCollection", obj="info:fedora/islandora:test", is_literal="false",)
+            >>> FedoraObject().add_relationship(pid="test:6", subject="info:fedora/test:6",
+            ... predicate="info:fedora/fedora-system:def/relations-external#isMemberOfCollection",
+            ... obj="info:fedora/islandora:test", is_literal="false",)
             200
 
         """
         r = requests.post(
-            f"{self.fedora_url}/fedora/objects/{pid}/relationships/new?subject={quote(subject, safe='')}&predicate={quote(predicate, safe='')}&object={quote(obj, safe='')}&isLiteral={is_literal}",
+            f"{self.fedora_url}/fedora/objects/{pid}/relationships/new?subject={quote(subject, safe='')}"
+            f"&predicate={quote(predicate, safe='')}&object={quote(obj, safe='')}&isLiteral={is_literal}",
             auth=self.auth,
         )
         if r.status_code == 200:
             return r.status_code
         else:
             raise Exception(
-                f"Unable to add relationship on {pid} with subject={subject}, predicate={predicate}, and object={obj}, and isLiteral as {is_literal}.  Returned {r.status_code}."
+                f"Unable to add relationship on {pid} with subject={subject}, predicate={predicate}, and object={obj}, "
+                f"and isLiteral as {is_literal}.  Returned {r.status_code}."
             )
 
     def change_versioning(self, pid, dsid, versionable="false"):
@@ -101,7 +107,8 @@ class FedoraObject:
             return r.status_code
         else:
             raise Exception(
-                f"Unable to change versioning of the {dsid} datastream on {pid} to {versionable}.  Returned {r.status_code}."
+                f"Unable to change versioning of the {dsid} datastream on {pid} to {versionable}.  Returned "
+                f"{r.status_code}."
             )
 
     def add_managed_datastream(
@@ -122,7 +129,8 @@ class FedoraObject:
             pid (str): The persistent identifier to the object when you want to add a file.
             dsid (str): The datastream id to assign your new file.
             file (str): The path to your file.
-            versionable (str): Defaults to "true".  Specifies whether the datastream should have versioning ("true" or "false").
+            versionable (str): Defaults to "true".  Specifies whether the datastream should have versioning ("true" or
+                "false").
             datastream_state (str): Specify whether the datastream is active, inactive, or deleted.
             checksum_type (str): The checksum type to use.  Defaults to "DEFAULT". See API docs for options.
 
@@ -152,7 +160,8 @@ class FedoraObject:
             "file": (file, open(file, "rb"), mime.from_file(file), {"Expires": "0"})
         }
         r = requests.post(
-            f"{self.fedora_url}/fedora/objects/{pid}/datastreams/{dsid}/?controlGroup=M&dsLabel={dsid}&versionable={versionable}&dsState={datastream_state}&checksumType={checksum_type}",
+            f"{self.fedora_url}/fedora/objects/{pid}/datastreams/{dsid}/?controlGroup=M&dsLabel={dsid}&versionable="
+            f"{versionable}&dsState={datastream_state}&checksumType={checksum_type}",
             auth=self.auth,
             files=upload_file,
         )
