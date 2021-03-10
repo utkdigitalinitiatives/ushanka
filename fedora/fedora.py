@@ -1,6 +1,7 @@
 import requests
 from urllib.parse import quote
 import magic
+import os
 
 
 class FedoraObject:
@@ -202,8 +203,19 @@ class BornDigitalObject(FedoraObject):
             is_literal="false",
         )
 
-    def add_archival_information_package(self):
-        return
+    def add_archival_information_package(self, pid):
+        """Adds the AIP to the OBJ datastream.
+        """
+        # TODO: This will change.  For now, the idea is to assume that the OBJ is in an AIP directory on disk. This is
+        #       for demo purposes only. This will change once we know where the AIP will come from.
+        aip = ""
+        for path, directories, files in os.walk(f"{self.path}/AIP"):
+            aip = self.add_managed_datastream(pid, "OBJ", f"{self.path}/AIP/{files[0]}")
+        if aip == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
+            )
+        return aip
 
     def add_dissemination_information_package(self):
         return
@@ -219,8 +231,13 @@ class BornDigitalObject(FedoraObject):
         self.add_to_collection(pid)
         self.assign_binary_content_model(pid)
         self.change_versioning(pid, "RELS-EXT", "true")
+        self.add_archival_information_package(pid)
         return pid
 
 
 if __name__ == "__main__":
-    print(BornDigitalObject("data", "test", "Testing", "islandora:test", "A").new())
+    print(
+        BornDigitalObject(
+            "data/object_1", "test", "Testing", "islandora:test", "A"
+        ).new()
+    )
