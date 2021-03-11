@@ -4,10 +4,11 @@ from dotenv import load_dotenv
 
 
 class PackageRequest:
-    def __init__(self, username, api_key, uri="https://localhost:8001/api/v2"):
+    def __init__(self, username, api_key, uri="https://localhost:8001/api/v2", temporary_storage="/tmp"):
         self.uri = uri
         self.username = username
         self.api_key = api_key
+        self.temporary_storage = temporary_storage
 
     def get_all_packages(self):
         """Get the uuids for all packages from Archivematica.
@@ -76,10 +77,10 @@ class PackageRequest:
             stream=True,
         ) as r:
             r.raise_for_status()
-            with open(f"temp/{filename}", "wb") as current_package:
+            with open(f"{self.temporary_storage}/{filename}", "wb") as current_package:
                 for chunk in r.iter_content(chunk_size=8192):
                     current_package.write(chunk)
-        return f"Wrote package to temp/{filename}"
+        return f"Wrote package to {self.temporary_storage}/{filename}"
 
 
 if __name__ == "__main__":
@@ -89,5 +90,6 @@ if __name__ == "__main__":
             username=os.getenv("username"),
             api_key=os.getenv("key"),
             uri=os.getenv("archivematica_uri"),
+            temporary_storage="temp"
         ).download_package("dea5c7af-2321-4102-be4b-93b3866c9c84")
     )
