@@ -108,6 +108,15 @@ class PackageRequest:
             if package["package_type"] == "AIP"
         ]
 
+    def get_descriptive_metadata(self, pair):
+        # TODO This doesn't work.  It returns a 404.  I've tried giving it a full path and relative path, but no idea.
+        path = f"{self.get_package_details(pair[1])['current_full_path'].split('/')[-1]}/METS.{pair[0]}.xml"
+        print(path)
+        r = requests.get(
+            f"{self.uri}/file/{pair[1]}/extract_file/{path}?username={self.username}&api_key={self.api_key}"
+        )
+        return r.status_code
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -117,5 +126,5 @@ if __name__ == "__main__":
             api_key=os.getenv("key"),
             uri=os.getenv("archivematica_uri"),
             temporary_storage="temp",
-        ).get_list_of_aips_and_dips()
+        ).get_descriptive_metadata(('33b86d0f-849c-40a9-818d-2dac9dace91b', '7f772d46-b005-42eb-8060-1ccc433dd0a8'))
     )
