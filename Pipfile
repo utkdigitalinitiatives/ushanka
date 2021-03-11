@@ -9,6 +9,7 @@ black = "*"
 [packages]
 requests = "*"
 python-magic = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.8"
