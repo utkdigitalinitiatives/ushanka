@@ -44,6 +44,22 @@ class PackageRequest:
         )
         return r.json()
 
+    def download_package(self, uuid):
+        """Download a package.  If the package is not already compressed, compress it as a tar.
+
+        Args:
+            uuid (str): The uuid of the package you want to download.
+
+        """
+        ## TODO: This needs work. Since we're dealing with big files, we need to stream better and be more thoughtful in general.
+        with open("download.tar", "wb") as download_file:
+            download_file.write(
+                requests.get(
+                    f"{self.uri}/file/{uuid}/download/?username={self.username}&api_key={self.api_key}"
+                ).content
+            )
+        return
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -52,5 +68,5 @@ if __name__ == "__main__":
             username=os.getenv("username"),
             api_key=os.getenv("key"),
             uri=os.getenv("archivematica_uri"),
-        ).get_package_details("2aaa349a-12a2-4338-90d1-5097bb989acc")
+        ).download_package("dea5c7af-2321-4102-be4b-93b3866c9c84")
     )
