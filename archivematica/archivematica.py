@@ -47,20 +47,39 @@ class PackageRequest:
     def download_package(self, uuid):
         """Download a package.  If the package is not already compressed, compress it as a tar.
 
+        We already have our AIPs compressed.  Therefore, this downloads the compressed AIP as is.  We do not compress
+        DIPs in Archivematica.  Therefore, this compresses the DIPs as a tar.  If the package is an AIP, it is saved
+        to temp storage as the original compressed file.  If it is a DIP, it is stored as the DIP's uuid with a .tar
+        extension.
+
         Args:
             uuid (str): The uuid of the package you want to download.
 
+        Returns:
+            str: A message about where the file was serialized to disk.
+
+        Examples:
+            >>> PackageRequest("test", "my_api_key").get_package_details('2aaa349a-12a2-4338-90d1-5097bb989acc')
+            "Wrote package to temp/Chronicling_COVID-19-20210215T185151Z-001-2aaa349a-12a2-4338-90d1-5097bb989acc.7z"
+            >>> PackageRequest("test", "my_api_key").get_package_details('dea5c7af-2321-4102-be4b-93b3866c9c84')
+            "Wrote package to temp/dea5c7af-2321-4102-be4b-93b3866c9c84.tar"
+
         """
-        # TODO: This streams file to disk, but still approaches serialization wrong.  Fix.
+        filename = ""
+        details = self.get_package_details(uuid)
+        if details["package_type"] == "DIP":
+            filename = f"{uuid}.tar"
+        else:
+            filename = details["current_full_path"].split("/")[-1]
         with requests.get(
             f"{self.uri}/file/{uuid}/download/?username={self.username}&api_key={self.api_key}",
             stream=True,
         ) as r:
             r.raise_for_status()
-            with open(f"temp/{uuid}", "wb") as current_package:
+            with open(f"temp/{filename}", "wb") as current_package:
                 for chunk in r.iter_content(chunk_size=8192):
                     current_package.write(chunk)
-        return f"Wrote package to temp/{uuid}"
+        return f"Wrote package to temp/{filename}"
 
 
 if __name__ == "__main__":
