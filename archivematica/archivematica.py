@@ -59,9 +59,9 @@ class PackageRequest:
             str: A message about where the file was serialized to disk.
 
         Examples:
-            >>> PackageRequest("test", "my_api_key").get_package_details('2aaa349a-12a2-4338-90d1-5097bb989acc')
+            >>> PackageRequest("test", "my_api_key").download_package('2aaa349a-12a2-4338-90d1-5097bb989acc')
             "Wrote package to temp/Chronicling_COVID-19-20210215T185151Z-001-2aaa349a-12a2-4338-90d1-5097bb989acc.7z"
-            >>> PackageRequest("test", "my_api_key").get_package_details('dea5c7af-2321-4102-be4b-93b3866c9c84')
+            >>> PackageRequest("test", "my_api_key").download_package('dea5c7af-2321-4102-be4b-93b3866c9c84')
             "Wrote package to temp/dea5c7af-2321-4102-be4b-93b3866c9c84.tar"
 
         """
