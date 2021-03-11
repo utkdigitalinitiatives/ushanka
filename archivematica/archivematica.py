@@ -103,9 +103,9 @@ class PackageRequest:
             f"{self.uri}/file/?username={self.username}&api_key={self.api_key}"
         )
         return [
-            (aip["uuid"], aip["related_packages"][0].split("/")[-2])
-            for aip in r.json()["objects"]
-            if aip["package_type"] == "AIP"
+            (package["uuid"], package["related_packages"][0].split("/")[-2])
+            for package in r.json()["objects"]
+            if package["package_type"] == "AIP"
         ]
 
 
