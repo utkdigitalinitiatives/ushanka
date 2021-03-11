@@ -51,14 +51,16 @@ class PackageRequest:
             uuid (str): The uuid of the package you want to download.
 
         """
-        ## TODO: This needs work. Since we're dealing with big files, we need to stream better and be more thoughtful in general.
-        with open("download.tar", "wb") as download_file:
-            download_file.write(
-                requests.get(
-                    f"{self.uri}/file/{uuid}/download/?username={self.username}&api_key={self.api_key}"
-                ).content
-            )
-        return
+        # TODO: This streams file to disk, but still approaches serialization wrong.  Fix.
+        with requests.get(
+            f"{self.uri}/file/{uuid}/download/?username={self.username}&api_key={self.api_key}",
+            stream=True,
+        ) as r:
+            r.raise_for_status()
+            with open(f"temp/{uuid}", "wb") as current_package:
+                for chunk in r.iter_content(chunk_size=8192):
+                    current_package.write(chunk)
+        return f"Wrote package to temp/{uuid}"
 
 
 if __name__ == "__main__":
