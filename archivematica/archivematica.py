@@ -1,6 +1,7 @@
 import requests
 import os
 from dotenv import load_dotenv
+import xmltodict
 
 
 class PackageRequest:
@@ -109,13 +110,26 @@ class PackageRequest:
         ]
 
     def get_descriptive_metadata(self, pair):
-        # TODO This doesn't work.  It returns a 404.  I've tried giving it a full path and relative path, but no idea.
-        path = f"{self.get_package_details(pair[1])['current_full_path'].split('/')[-1]}/METS.{pair[0]}.xml"
-        print(path)
+        """Parses the descriptive metadata from the METS.
+
+        Args:
+            pair (tuple): A tuple with an AIP uuid and DIP uuid.
+
+        Returns:
+            OrderedDict: An ordered dict of descriptive metadata elements from the originating SIP.
+
+        Examples:
+            >>> PackageRequest("test", "my_api_key").get_descriptive_metadata(("33b86d0f-849c-40a9-818d-2dac9dace91b","7f772d46-b005-42eb-8060-1ccc433dd0a8",))
+            OrderedDict([('dcterms:dublincore', OrderedDict([('@xmlns:dc', 'http://purl.org/dc/elements/1.1/'), ('@xmlns:dcterms', 'http://purl.org/dc/terms/'), ('@xsi:schemaLocation', 'http://purl.org/dc/terms/ https://dublincore.org/schemas/xmls/qdc/2008/02/11/dcterms.xsd'), ('dc:title', 'Chronocling Covid'), ('dc:description', 'This test deposit includes objects submitted as part of the Chronicling Covid-19 project.'), ('dc:publisher', 'University of Tennessee'), ('dc:date', '2020'), ('dc:language', 'English'), ('dc:rights', 'Copyright Not Evaluated')]))])
+
+        """
+        path = f"{self.get_package_details(pair[1])['current_path'].split('/')[-1]}/METS.{pair[0]}.xml"
         r = requests.get(
-            f"{self.uri}/file/{pair[1]}/extract_file/{path}?username={self.username}&api_key={self.api_key}"
+            f"{self.uri}/file/{pair[1]}/extract_file/?username={self.username}&api_key={self.api_key}&relative_path_to_file={path}"
         )
-        return r.status_code
+        return xmltodict.parse(r.content)["mets:mets"]["mets:dmdSec"][0]["mets:mdWrap"][
+            "mets:xmlData"
+        ]
 
 
 if __name__ == "__main__":
@@ -126,5 +140,10 @@ if __name__ == "__main__":
             api_key=os.getenv("key"),
             uri=os.getenv("archivematica_uri"),
             temporary_storage="temp",
-        ).get_descriptive_metadata(('33b86d0f-849c-40a9-818d-2dac9dace91b', '7f772d46-b005-42eb-8060-1ccc433dd0a8'))
+        ).get_descriptive_metadata(
+            (
+                "33b86d0f-849c-40a9-818d-2dac9dace91b",
+                "7f772d46-b005-42eb-8060-1ccc433dd0a8",
+            )
+        )
     )
