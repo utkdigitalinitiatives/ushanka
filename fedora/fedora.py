@@ -183,6 +183,7 @@ class BornDigitalObject(FedoraObject):
         label,
         collection,
         state,
+        desriptive_metadata,
         fedora="http://localhost:8080",
         auth=("fedoraAdmin", "fedoraAdmin"),
     ):
@@ -191,6 +192,7 @@ class BornDigitalObject(FedoraObject):
         self.label = label
         self.collection = collection
         self.state = state
+        self.original_metadata = desriptive_metadata
         super().__init__(fedora, auth)
 
     def add_to_collection(self, pid):
@@ -232,7 +234,12 @@ class BornDigitalObject(FedoraObject):
     def add_technical_metadata(self):
         return
 
-    def add_descriptive_metadata(self, metadata_dict):
+    def add_descriptive_metadata(self, pid):
+        """Adds a MODS datastream."""
+        MetadataBuilder(self.original_metadata).build_mods()
+        response = self.add_managed_datastream(pid, "MODS", "temp/MODS.xml")
+        if response == "":
+            raise Exception(f"\nFailed to create MODS on {pid}.")
         return
 
     def new(self):
@@ -241,6 +248,7 @@ class BornDigitalObject(FedoraObject):
         self.assign_binary_content_model(pid)
         self.change_versioning(pid, "RELS-EXT", "true")
         self.add_archival_information_package(pid)
+        self.add_descriptive_metadata(pid)
         return pid
 
 
@@ -273,40 +281,23 @@ class MetadataBuilder:
             )
 
     def build_mods(self):
-        rights = self.__lookup_rights(self.original_metadata['rights'])
-        return f"""
-            <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">
-                <titleInfo>
-                    <title>
-                        {self.original_metadata['title']}
-                    </title>
-                </titleInfo>
-                <abstract>
-                        {self.original_metadata['abstract']}
-                </abstract>
-                <originInfo>
-                    <dateCreated>
-                        {self.original_metadata['date']}
-                    </dateCreated>
-                    <publisher>
-                        {self.original_metadata['publisher']}
-                    </publisher>
-                </originInfo>
-                <language>
-                    <languageTerm authority="iso639-2b" type="text">
-                        {self.original_metadata['language']}
-                    </languageTerm>
-                </language>
-                <accessCondition type="use and reproduction" xlink:href="{rights[1]}">
-                    {rights[0]}
-                </accessCondition>
-            </mods>
-        """
+        rights = self.__lookup_rights(self.original_metadata["rights"])
+        mods_record = f"""<?xml version="1.0"?>\n<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">\n\t<titleInfo><title>{self.original_metadata['title']}</title></titleInfo>\n\t<abstract>{self.original_metadata['abstract']}</abstract>\n\t<originInfo>\n\t\t<dateCreated>{self.original_metadata['date']}</dateCreated>\n\t\t<publisher>{self.original_metadata['publisher']}</publisher>\n\t</originInfo>\n\t<language>\n\t\t<languageTerm authority="iso639-2b" type="text">{self.original_metadata['language']}</languageTerm>\n\t</language>\n\t<accessCondition type="use and reproduction" xlink:href="{rights[1]}">{rights[0]}</accessCondition>\n</mods>"""
+        with open("temp/MODS.xml", "w") as metadata:
+            metadata.write(mods_record)
 
 
 if __name__ == "__main__":
+    sample_metadata = {
+        "title": "Chronocling Covid",
+        "abstract": "This test deposit includes objects submitted as part of the Chronicling Covid-19 project.",
+        "publisher": "University of Tennessee",
+        "date": "2020",
+        "language": "English",
+        "rights": "Copyright Not Evaluated",
+    }
     print(
         BornDigitalObject(
-            "data/object_1", "test", "Testing", "islandora:test", "A"
+            "data/object_1", "test", "Testing", "islandora:test", "A", sample_metadata
         ).new()
     )
