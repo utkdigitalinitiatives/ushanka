@@ -10,6 +10,7 @@ black = "*"
 requests = "*"
 python-magic = "*"
 python-dotenv = "*"
+xmltodict = "*"
 
 [requires]
 python_version = "3.8"

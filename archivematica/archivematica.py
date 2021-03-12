@@ -131,6 +131,49 @@ class PackageRequest:
             "mets:xmlData"
         ]
 
+    def parse_metadata(self, pair):
+        """Reads descriptive metadata and formats as a simple dict.
+
+        Args:
+            pair (tuple): A tuple with an AIP uuid and a DIP uuid.
+
+        Returns:
+            dict: A dict with keys and values it can make sense of.
+
+        Examples:
+            >>> PackageRequest("test", "my_api_key").parse_metadata(("33b86d0f-849c-40a9-818d-2dac9dace91b", "7f772d46-b005-42eb-8060-1ccc433dd0a8"))
+            {'title': 'Chronocling Covid', 'abstract': 'This test deposit includes objects submitted as part of the Chronicling Covid-19 project.', 'publisher': 'University of Tennessee', 'date': '2020', 'language': 'English', 'rights': 'Copyright Not Evaluated'}
+            >>> PackageRequest("test", "my_api_key").parse_metadata(('2aaa349a-12a2-4338-90d1-5097bb989acc', 'dea5c7af-2321-4102-be4b-93b3866c9c84'))
+            {'title': '', 'abstract': '', 'date': '', 'language': '', 'publisher': '', 'rights': ''}
+
+        """
+        metadata = {
+            "title": "",
+            "abstract": "",
+            "date": "",
+            "language": "",
+            "publisher": "",
+            "rights": "",
+        }
+        try:
+            x = self.get_descriptive_metadata(pair)["dcterms:dublincore"]
+        except KeyError:
+            x = {}
+        for k, v in x.items():
+            if k == "dc:title":
+                metadata["title"] = v
+            if k == "dc:description":
+                metadata["abstract"] = v
+            if k == "dc:date":
+                metadata["date"] = v
+            if k == "dc:language":
+                metadata["language"] = v
+            if k == "dc:publisher":
+                metadata["publisher"] = v
+            if k == "dc:rights":
+                metadata["rights"] = v
+        return metadata
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -140,10 +183,10 @@ if __name__ == "__main__":
             api_key=os.getenv("key"),
             uri=os.getenv("archivematica_uri"),
             temporary_storage="temp",
-        ).get_descriptive_metadata(
+        ).parse_metadata(
             (
-                "33b86d0f-849c-40a9-818d-2dac9dace91b",
-                "7f772d46-b005-42eb-8060-1ccc433dd0a8",
+                "2aaa349a-12a2-4338-90d1-5097bb989acc",
+                "dea5c7af-2321-4102-be4b-93b3866c9c84",
             )
         )
     )
