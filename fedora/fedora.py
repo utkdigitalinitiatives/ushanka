@@ -2,6 +2,7 @@ import requests
 from urllib.parse import quote
 import magic
 import os
+from dataclasses import dataclass
 
 
 class FedoraObject:
@@ -213,8 +214,7 @@ class BornDigitalObject(FedoraObject):
         )
 
     def add_archival_information_package(self, pid):
-        """Adds the AIP to the OBJ datastream.
-        """
+        """Adds the AIP to the OBJ datastream."""
         # TODO: This will change.  For now, the idea is to assume that the OBJ is in an AIP directory on disk. This is
         #       for demo purposes only. This will change once we know where the AIP will come from.
         aip = ""
@@ -232,7 +232,7 @@ class BornDigitalObject(FedoraObject):
     def add_technical_metadata(self):
         return
 
-    def add_descriptive_metadata(self):
+    def add_descriptive_metadata(self, metadata_dict):
         return
 
     def new(self):
@@ -242,6 +242,66 @@ class BornDigitalObject(FedoraObject):
         self.change_versioning(pid, "RELS-EXT", "true")
         self.add_archival_information_package(pid)
         return pid
+
+
+@dataclass
+class MetadataBuilder:
+    original_metadata: dict
+
+    @staticmethod
+    def __lookup_rights(rights):
+        valid_rights = {
+            "Copyright Not Evaluated": "http://rightsstatements.org/vocab/CNE/1.0/",
+            "Copyright Undetermined": "http://rightsstatements.org/vocab/UND/1.0/",
+            "No Known Copyright": "http://rightsstatements.org/vocab/NKC/1.0/",
+            "No Copyright - United States": "http://rightsstatements.org/vocab/NoC-US/1.0/",
+            "No Copyright - Other Known Legal Restrictions": "http://rightsstatements.org/vocab/NoC-OKLR/1.0/",
+            "No Copyright - Non-Commercial Use Only": "http://rightsstatements.org/vocab/NoC-NC/1.0/",
+            "No Copyright - Contractual Restrictions": "http://rightsstatements.org/vocab/NoC-CR/1.0/",
+            "In Copyright": "http://rightsstatements.org/vocab/InC/1.0/",
+            "In Copyright - EU Orphan Work": "http://rightsstatements.org/vocab/InC-OW-EU/1.0/",
+            "In Copyright - Educational Use Permitted": "http://rightsstatements.org/vocab/InC-EDU/1.0/",
+            "In Copyright - Non-Commercial Use Permitted": "http://rightsstatements.org/vocab/InC-NC/1.0/",
+            "In Copyright - Rights-holder(s) Unlocatable or Unidentifiable": "http://rightsstatements.org/vocab/InC-RUU/1.0/",
+        }
+        if rights in valid_rights:
+            return rights, valid_rights[rights]
+        else:
+            return (
+                "Copyright Not Evaluated",
+                "http://rightsstatements.org/vocab/CNE/1.0/",
+            )
+
+    def build_mods(self):
+        rights = self.__lookup_rights(self.original_metadata['rights'])
+        return f"""
+            <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">
+                <titleInfo>
+                    <title>
+                        {self.original_metadata['title']}
+                    </title>
+                </titleInfo>
+                <abstract>
+                        {self.original_metadata['abstract']}
+                </abstract>
+                <originInfo>
+                    <dateCreated>
+                        {self.original_metadata['date']}
+                    </dateCreated>
+                    <publisher>
+                        {self.original_metadata['publisher']}
+                    </publisher>
+                </originInfo>
+                <language>
+                    <languageTerm authority="iso639-2b" type="text">
+                        {self.original_metadata['language']}
+                    </languageTerm>
+                </language>
+                <accessCondition type="use and reproduction" xlink:href="{rights[1]}">
+                    {rights[0]}
+                </accessCondition>
+            </mods>
+        """
 
 
 if __name__ == "__main__":
