@@ -234,9 +234,9 @@ class BornDigitalObject(FedoraObject):
     def add_technical_metadata(self):
         return
 
-    def add_descriptive_metadata(self, pid):
+    def add_mods_metadata(self, pid):
         """Adds a MODS datastream."""
-        MetadataBuilder(self.label, self.original_metadata).build_mods()
+        MetadataBuilder(self.label, self.original_metadata, pid).build_mods()
         response = self.add_managed_datastream(pid, "MODS", "temp/MODS.xml")
         if response == "":
             raise Exception(f"\nFailed to create MODS on {pid}.")
@@ -249,7 +249,7 @@ class BornDigitalObject(FedoraObject):
         self.assign_binary_content_model(pid)
         self.change_versioning(pid, "RELS-EXT", "true")
         self.add_archival_information_package(pid)
-        self.add_descriptive_metadata(pid)
+        self.add_mods_metadata(pid)
         return pid
 
 
