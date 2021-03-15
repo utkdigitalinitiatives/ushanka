@@ -228,8 +228,16 @@ class BornDigitalObject(FedoraObject):
             )
         return aip
 
-    def add_dissemination_information_package(self):
-        return
+    def add_dissemination_information_package(self, pid):
+        """Adds the DIP to a datastream called DIP."""
+        dip = ""
+        for path, directories, files in os.walk(f"{self.path}/DIP"):
+            dip = self.add_managed_datastream(pid, "DIP", f"{self.path}/DIP/{files[0]}")
+        if dip == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
+            )
+        return dip
 
     def add_technical_metadata(self):
         return
@@ -250,6 +258,7 @@ class BornDigitalObject(FedoraObject):
         self.change_versioning(pid, "RELS-EXT", "true")
         self.add_archival_information_package(pid)
         self.add_mods_metadata(pid)
+        self.add_dissemination_information_package(pid)
         return pid
 
 
