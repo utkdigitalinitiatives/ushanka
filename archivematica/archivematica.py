@@ -2,6 +2,7 @@ import requests
 import os
 from dotenv import load_dotenv
 import xmltodict
+from pathlib import Path
 
 
 class PackageRequest:
@@ -52,7 +53,7 @@ class PackageRequest:
         )
         return r.json()
 
-    def download_package(self, uuid):
+    def download_package(self, uuid, store_directory="object_1"):
         """Download a package.  If the package is not already compressed, compress it as a tar.
 
         We already have our AIPs compressed.  Therefore, this downloads the compressed AIP as is.  We do not compress
@@ -62,6 +63,7 @@ class PackageRequest:
 
         Args:
             uuid (str): The uuid of the package you want to download.
+            store_directory (str): The subdirectory where you want to download your package to.
 
         Returns:
             str: A message about where the file was serialized to disk.
@@ -84,10 +86,13 @@ class PackageRequest:
             stream=True,
         ) as r:
             r.raise_for_status()
-            with open(f"{self.temporary_storage}/{filename}", "wb") as current_package:
+            with open(
+                f"{self.temporary_storage}/{store_directory}/{details['package_type']}/{filename}",
+                "wb",
+            ) as current_package:
                 for chunk in r.iter_content(chunk_size=8192):
                     current_package.write(chunk)
-        return f"Wrote package to {self.temporary_storage}/{filename}"
+        return f"Wrote package to {self.temporary_storage}/{store_directory}/{filename}"
 
     def get_list_of_aips_and_dips(self):
         """Get a list of tuples with the AIP as index 0 and DIP as index 1.
@@ -175,18 +180,57 @@ class PackageRequest:
         return metadata
 
 
+class ArchivematicaBundler(PackageRequest):
+    def __init__(
+        self,
+        username,
+        api_key,
+        uri="https://localhost:8001/api/v2",
+        temporary_storage="/tmp",
+    ):
+        self.uri = uri
+        self.username = username
+        self.api_key = api_key
+        self.temporary_storage = temporary_storage
+        super().__init__(username, api_key, uri, temporary_storage)
+
+    def __serialize_metadata(self, pair):
+        with open(
+            f"{self.temporary_storage}/{pair[0]}/metadata.py", "w"
+        ) as metadata_file:
+            metadata_file.write(str(self.parse_metadata(pair)))
+        return
+
+    def build_bundles(self):
+        """Serializes Bundles of Archivematica packages to disk.
+
+        Returns:
+            str: A message including the number of bundles serialized to disk.py
+
+        Examples:
+            >>> PackageRequest("test", "my_api_key").build_bundles()
+            "Serialized 3 bundles from Archivematica to disk."
+
+        """
+        bundles = self.get_list_of_aips_and_dips()
+        for bundle in bundles:
+            Path(f"{self.temporary_storage}/{bundle[0]}/DIP").mkdir(
+                parents=True, exist_ok=True
+            )
+            Path(f"{self.temporary_storage}/{bundle[0]}/AIP").mkdir(
+                parents=True, exist_ok=True
+            )
+            self.download_package(bundle[0], bundle[0])
+            self.download_package(bundle[1], bundle[0])
+            self.__serialize_metadata(bundle)
+        return f"Serialized {len(bundles)} bundles from Archivematica to disk."
+
+
 if __name__ == "__main__":
     load_dotenv()
-    print(
-        PackageRequest(
-            username=os.getenv("username"),
-            api_key=os.getenv("key"),
-            uri=os.getenv("archivematica_uri"),
-            temporary_storage="temp",
-        ).parse_metadata(
-            (
-                "2aaa349a-12a2-4338-90d1-5097bb989acc",
-                "dea5c7af-2321-4102-be4b-93b3866c9c84",
-            )
-        )
-    )
+    ArchivematicaBundler(
+        username=os.getenv("username"),
+        api_key=os.getenv("key"),
+        uri=os.getenv("archivematica_uri"),
+        temporary_storage="data",
+    ).build_bundles()
