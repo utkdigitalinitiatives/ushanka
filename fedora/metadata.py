@@ -6,6 +6,7 @@ import requests
 class MetadataBuilder:
     label: str
     original_metadata: dict
+    pid: str
 
     @staticmethod
     def __lookup_rights(rights):
@@ -40,9 +41,15 @@ class MetadataBuilder:
     def build_mods(self):
         rights = self.__lookup_rights(self.original_metadata["rights"])
         title = self.__check_title(self.original_metadata["title"])
-        mods_record = f"""<?xml version="1.0"?>\n<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">\n\t<titleInfo><title>{title}</title></titleInfo>\n\t<abstract>{self.original_metadata['abstract']}</abstract>\n\t<originInfo>\n\t\t<dateCreated>{self.original_metadata['date']}</dateCreated>\n\t\t<publisher>{self.original_metadata['publisher']}</publisher>\n\t</originInfo>\n\t<language>\n\t\t<languageTerm authority="iso639-2b" type="text">{self.original_metadata['language']}</languageTerm>\n\t</language>\n\t<accessCondition type="use and reproduction" xlink:href="{rights[1]}">{rights[0]}</accessCondition>\n</mods>"""
+        mods_record = f"""<?xml version="1.0"?>\n<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">\n\t<titleInfo><title>{title}</title></titleInfo>\n\t<abstract>{self.original_metadata['abstract']}</abstract>\n\t<originInfo>\n\t\t<dateCreated>{self.original_metadata['date']}</dateCreated>\n\t\t<publisher>{self.original_metadata['publisher']}</publisher>\n\t</originInfo>\n\t<language>\n\t\t<languageTerm authority="iso639-2b" type="text">{self.original_metadata['language']}</languageTerm>\n\t</language>\n\t<accessCondition type="use and reproduction" xlink:href="{rights[1]}">{rights[0]}</accessCondition>\n<identifier type="pid">{self.pid}</identifier></mods>"""
         with open("temp/MODS.xml", "w") as metadata:
             metadata.write(mods_record)
+
+    def build_dc(self):
+        title = self.__check_title(self.original_metadata["title"])
+        dc_record = f"""<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">\n\t<dc:title>{title}</dc:title>\n\t<dc:description>{self.original_metadata['abstract']}</dc:description>\n\t<dc:date>{self.original_metadata['date']}</dc:date>\n\t<dc:rights>{self.original_metadata['rights']}</dc:rights>\n\t<dc:identifier>{self.original_metadata['identifier']}</dc:identifier></oai_dc:dc>"""
+        with open("temp/DC.xml", "w") as metadata:
+            metadata.write(dc_record)
 
 
 class GSearchConnection:
