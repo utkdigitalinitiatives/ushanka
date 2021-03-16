@@ -201,6 +201,35 @@ class ArchivematicaBundler(PackageRequest):
             metadata_file.write(str(self.parse_metadata(pair)))
         return
 
+    def __download_a_thumbnail(self, pair, store_directory="object_1"):
+        """Leverage the METS to identify a thumbnail to represent the object."""
+        path = f"{self.get_package_details(pair[1])['current_path'].split('/')[-1]}/METS.{pair[0]}.xml"
+        r = requests.get(
+            f"{self.uri}/file/{pair[1]}/extract_file/?username={self.username}&api_key={self.api_key}&relative_path_to_file={path}"
+        )
+        thumbnails = [
+            amd_sec["mets:techMD"]["mets:mdWrap"]["mets:xmlData"]["premis:object"][
+                "premis:objectIdentifier"
+            ]["premis:objectIdentifierValue"]
+            for amd_sec in xmltodict.parse(r.content)["mets:mets"]["mets:amdSec"]
+            if amd_sec["mets:techMD"]["mets:mdWrap"]["mets:xmlData"]["premis:object"][
+                "premis:objectCharacteristics"
+            ]["premis:format"]["premis:formatDesignation"]["premis:formatName"]
+            == "JPEG"
+        ]
+        with requests.get(
+            f"{self.uri}/file/{pair[1]}/extract_file/?username={self.username}&api_key={self.api_key}&relative_path_to_file={self.get_package_details(pair[1])['current_path'].split('/')[-1]}/thumbnails/{thumbnails[0]}.jpg",
+            stream=True,
+        ) as thumbnail:
+            thumbnail.raise_for_status()
+            with open(
+                f"{self.temporary_storage}/{store_directory}/TN.jpg",
+                "wb",
+            ) as current_package:
+                for chunk in thumbnail.iter_content(chunk_size=8192):
+                    current_package.write(chunk)
+        return f"Wrote thumbnail to {self.temporary_storage}/{store_directory}/TN.jpg"
+
     def build_bundles(self):
         """Serializes Bundles of Archivematica packages to disk.
 
@@ -223,6 +252,7 @@ class ArchivematicaBundler(PackageRequest):
             self.download_package(bundle[0], bundle[0])
             self.download_package(bundle[1], bundle[0])
             self.__serialize_metadata(bundle)
+            self.__download_a_thumbnail(bundle, bundle[0])
         return f"Serialized {len(bundles)} bundles from Archivematica to disk."
 
 
