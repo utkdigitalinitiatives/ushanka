@@ -2,7 +2,7 @@ import requests
 from urllib.parse import quote
 import magic
 import os
-from metadata import MetadataBuilder, GSearchConnection
+from fedora.metadata import MetadataBuilder, GSearchConnection
 
 
 class FedoraObject:
@@ -251,6 +251,11 @@ class BornDigitalObject(FedoraObject):
         GSearchConnection(pid).update()
         return
 
+    def add_a_thumbnail(self, pid):
+        """Adds a thumbnail"""
+        self.add_managed_datastream(pid, "TN", f"{self.path}/TN.jpg")
+        return
+
     def new(self):
         pid = self.ingest(self.namespace, self.label, self.state)
         self.add_to_collection(pid)
@@ -259,6 +264,7 @@ class BornDigitalObject(FedoraObject):
         self.add_archival_information_package(pid)
         self.add_mods_metadata(pid)
         self.add_dissemination_information_package(pid)
+        self.add_a_thumbnail(pid)
         return pid
 
 
