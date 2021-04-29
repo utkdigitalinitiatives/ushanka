@@ -4,13 +4,11 @@ import requests
 class ArchiveSpace:
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
         self.base_url = url
-        self.username = user
-        self.password = password
-        self.headers = {"X-ArchivesSpace-Session": self.authenticate()}
+        self.headers = {"X-ArchivesSpace-Session": self.__authenticate(user, password)}
 
-    def authenticate(self):
+    def __authenticate(self, username, password):
         r = requests.post(
-            url=f"{self.base_url}/users/{self.username}/login?password={self.password}"
+            url=f"{self.base_url}/users/{username}/login?password={password}"
         )
         return r.json()["session"]
 
@@ -18,10 +16,6 @@ class ArchiveSpace:
 class Repository(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
         super().__init__(url, user, password)
-        self.base_url = url
-        self.username = user
-        self.password = password
-        self.headers = {"X-ArchivesSpace-Session": self.authenticate()}
 
     def get(self, repo_code):
         r = requests.get(
@@ -32,4 +26,4 @@ class Repository(ArchiveSpace):
 
 
 if __name__ == "__main__":
-    print(Repository().get("1"))
+    print(Repository().get("2"))
