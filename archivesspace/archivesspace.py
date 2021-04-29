@@ -90,5 +90,52 @@ class Accession(ArchiveSpace):
         return r.json()
 
 
+class Resource(ArchiveSpace):
+    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+        super().__init__(url, user, password)
+
+    def get_list_of_ids(self, repo_id):
+        """Get a list of ids for Resources in a Repository.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+
+        Returns:
+            list: A list of ints that represent each Resource in the repository.
+
+        Examples:
+            >>> Resource().get_list_of_ids(2)
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/resources?all_ids=true",
+            headers=self.headers,
+        )
+        return r.json()
+
+    def get_resources_by_page(self, repo_id, page=1, page_size=10):
+        """Get Resources on a page.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            page (int): The page of resources you want to get.
+            page_size (int): The size of the page you want returned.
+
+        Returns:
+            dict: A dict with information about the results plus all matching Resources.
+
+        Examples:
+            >>> Resource().get_resources_by_page(2, 2, 10)
+            {'first_page': 1, 'last_page': 1, 'this_page': 2, 'total': 2, 'results': []}
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/resources?page={page}&page_size={page_size}",
+            headers=self.headers,
+        )
+        return r.json()
+
+
 if __name__ == "__main__":
-    print(Repository().get(2))
+    print(Resource().get_resources_by_page(2, 2, 10))
