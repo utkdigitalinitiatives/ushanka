@@ -1,3 +1,4 @@
 .idea/*
 fedora/__pycache__/*
+archivesspace/__pycache__/*
 .env
