@@ -137,5 +137,52 @@ class Resource(ArchiveSpace):
         return r.json()
 
 
+class DigitalObject(ArchiveSpace):
+    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+        super().__init__(url, user, password)
+
+    def get_list_of_ids(self, repo_id):
+        """Get a list of ids for Digital Objects in a Repository.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+
+        Returns:
+            list: A list of ints that represent each Digital Object in the repository.
+
+        Examples:
+            >>> DigitalObject().get_list_of_ids(2)
+            []
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/digital_objects?all_ids=true",
+            headers=self.headers,
+        )
+        return r.json()
+
+    def get_by_page(self, repo_id, page=1, page_size=10):
+        """Get Digital Objects on a page.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            page (int): The page of digital objects you want to get.
+            page_size (int): The size of the page you want returned.
+
+        Returns:
+            dict: A dict with information about the results plus all matching Digital Objects.
+
+        Examples:
+            >>> DigitalObject().get_by_page(2, 2, 10)
+            {'first_page': 1, 'last_page': 1, 'this_page': 1, 'total': 0, 'results': []}
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/digital_objects?page={page}&page_size={page_size}",
+            headers=self.headers,
+        )
+        return r.json()
+
+
 if __name__ == "__main__":
-    print(Resource().get_resources_by_page(2, 2, 10))
+    print(DigitalObject().get_by_page(2))
