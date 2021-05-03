@@ -138,6 +138,27 @@ class Resource(ArchiveSpace):
         )
         return r.json()
 
+    def get(self, repo_id, resource_id):
+        """Get a specific resource.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            resource_id (int): The id of the resource you are requesting.
+
+        Returns:
+            dict: A dict representing your resource.
+
+        Examples:
+            >>> Resource().get(2, 18)
+            {'error': 'Resource not found'}
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/resources/{resource_id}",
+            headers=self.headers,
+        )
+        return r.json()
+
 
 class DigitalObject(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
@@ -250,14 +271,4 @@ class FileVersion:
 
 
 if __name__ == "__main__":
-    print(
-        DigitalObject().create(
-            "Tulip Tree",
-            2,
-            file_versions=[
-                FileVersion().add(
-                    "https://digital.lib.utk.edu/collections/islandora/object/knoxgardens%3A115"
-                )
-            ],
-        )
-    )
+    print(Resource().get(2, 299))
