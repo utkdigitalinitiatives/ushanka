@@ -314,6 +314,36 @@ class DigitalObject(ArchiveSpace):
         )
         return r.json()
 
+    def add_badge(self, repo_id, digital_object_id, badge_uri):
+        """Add an image to represent a digital object.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            digital_object_id (int): The id of the digital object you want.
+            badge_uri (str): The uri to image that represents the digital object.
+
+        Returns:
+            dict: A message stating whether or not your badge update was successful or an error.
+
+        Examples
+            >>> DigitalObject().add_badge(2, 2, "https://digital.lib.utk.edu/collections/islandora/object/knoxgardens%3A115/datastream/TN")
+            {'status': 'Updated', 'id': 2, 'lock_version': 2, 'stale': None, 'uri': '/repositories/2/digital_objects/2',
+            'warnings': []}
+
+        """
+        current = self.get(repo_id, digital_object_id)
+        current["file_versions"].append(
+            FileVersion().add(
+                badge_uri, show_attribute="embed", is_representative=False
+            )
+        )
+        r = requests.post(
+            url=f"{self.base_url}/repositories/{repo_id}/digital_objects/{digital_object_id}",
+            headers=self.headers,
+            data=json.dumps(current),
+        )
+        return r.json()
+
 
 class FileVersion:
     @staticmethod
@@ -329,4 +359,10 @@ class FileVersion:
 
 
 if __name__ == "__main__":
-    print(DigitalObject().get(2, 3))
+    print(
+        DigitalObject().add_badge(
+            2,
+            2,
+            "https://digital.lib.utk.edu/collections/islandora/object/knoxgardens%3A115/datastream/TN",
+        )
+    )
