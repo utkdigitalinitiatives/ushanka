@@ -1,4 +1,6 @@
 import requests
+from uuid import uuid4
+import json
 
 
 class ArchiveSpace:
@@ -183,6 +185,79 @@ class DigitalObject(ArchiveSpace):
         )
         return r.json()
 
+    def create(self, title, repo_id, specified_properties={}, file_versions=[]):
+        """Creates a Digital Object in ArchivesSpace using specified properties and defaults.
+
+        Args:
+            title (str): A title for your new digital object.
+            repo_id (int): The repo_id for the repository of which your digital object belongs.
+            specified_properties (dict): Any properties to override properties set in initial object.
+            file_versions (list): A list of file versions, if any, to add to your new digital object.
+
+        Returns:
+            dict: A dict with information about your new object and whether it was successfully created.
+
+        Examples:
+            >>> DigitalObject().create("Test with no versions", 2))
+            {'status': 'Created', 'id': 1, 'lock_version': 0, 'stale': None, 'uri': '/repositories/2/digital_objects/1',
+            'warnings': []}
+            >>> DigitalObject().create("Tulip Tree", 2, file_versions=[FileVersion().add("https://digital.lib.utk.edu/collections/islandora/object/knoxgardens%3A115")])
+            {'status': 'Created', 'id': 2, 'lock_version': 0, 'stale': None, 'uri': '/repositories/2/digital_objects/2',
+            'warnings': []}
+
+        """
+        initial_object = {
+            "jsonmodel_type": "digital_object",
+            "external_ids": [],
+            "subjects": [],
+            "linked_events": [],
+            "external_documents": [],
+            "rights_statements": [],
+            "linked_agents": [],
+            "is_slug_auto": True,
+            "publish": True,
+            "file_versions": [],
+            "restrictions": False,
+            "notes": [],
+            "linked_instances": [],
+            "title": "Initialized object",
+            "digital_object_id": str(uuid4()),
+        }
+        for key, value in specified_properties.items():
+            initial_object[key] = value
+        initial_object["title"] = title
+        for file_version in file_versions:
+            initial_object["file_versions"].append(file_version)
+        r = requests.post(
+            url=f"{self.base_url}/repositories/{repo_id}/digital_objects",
+            headers=self.headers,
+            data=json.dumps(initial_object),
+        )
+        return r.json()
+
+
+class FileVersion:
+    @staticmethod
+    def add(uri, published=True, is_representative=True):
+        return {
+            "jsonmodel_type": "file_version",
+            "is_representative": is_representative,
+            "file_uri": uri,
+            "xlink_actuate_attribute": "onRequest",
+            "xlink_show_attribute": "new",
+            "publish": published,
+        }
+
 
 if __name__ == "__main__":
-    print(DigitalObject().get_by_page(2))
+    print(
+        DigitalObject().create(
+            "Tulip Tree",
+            2,
+            file_versions=[
+                FileVersion().add(
+                    "https://digital.lib.utk.edu/collections/islandora/object/knoxgardens%3A115"
+                )
+            ],
+        )
+    )
