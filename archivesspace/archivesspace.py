@@ -243,6 +243,27 @@ class DigitalObject(ArchiveSpace):
         )
         return r.json()
 
+    def get(self, repo_id, digital_object_id):
+        """Get a Resource by id.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            digital_object_id (int): The id of the digital object you want.
+
+        Returns:
+            dict: The digital object as a dict.
+
+        Examples:
+            >>> DigitalObject().get(2, 2)
+            {'error': 'DigitalObject not found'}
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/digital_objects/{digital_object_id}",
+            headers=self.headers,
+        )
+        return r.json()
+
     def create(self, title, repo_id, specified_properties={}, file_versions=[]):
         """Creates a Digital Object in ArchivesSpace using specified properties and defaults.
 
@@ -296,16 +317,16 @@ class DigitalObject(ArchiveSpace):
 
 class FileVersion:
     @staticmethod
-    def add(uri, published=True, is_representative=True):
+    def add(uri, published=True, is_representative=True, show_attribute="new"):
         return {
             "jsonmodel_type": "file_version",
             "is_representative": is_representative,
             "file_uri": uri,
             "xlink_actuate_attribute": "onRequest",
-            "xlink_show_attribute": "new",
+            "xlink_show_attribute": show_attribute,
             "publish": published,
         }
 
 
 if __name__ == "__main__":
-    print(Resource().link_digital_object(2, 18, 2))
+    print(DigitalObject().get(2, 3))
