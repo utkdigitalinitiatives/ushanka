@@ -159,6 +159,43 @@ class Resource(ArchiveSpace):
         )
         return r.json()
 
+    def link_digital_object(
+        self, repo_id, resource_id, digital_object_id, is_representative=False
+    ):
+        """Link a digital object to a resource.
+
+        Args:
+            repo_id (int): The id of your repository.
+            resource_id (int): The id of your resource.
+            digital_object_id (int): The id of your digital object.
+            is_representative (bool): Whether or not your digital object should be representative of the resource.
+
+        Returns:
+            dict: Success or error message with appropriate metadata.
+
+        Examples:
+            >>> Resource().link_digital_object(2, 18, 2)
+            {'status': 'Updated', 'id': 18, 'lock_version': 1, 'stale': None, 'uri': '/repositories/2/resources/18',
+            'warnings': []}
+
+        """
+        new_instance = {
+            "is_representative": is_representative,
+            "instance_type": "digital_object",
+            "jsonmodel_type": "instance",
+            "digital_object": {
+                "ref": f"/repositories/2/digital_objects/{digital_object_id}"
+            },
+        }
+        existing_collection = self.get(repo_id, resource_id)
+        existing_collection["instances"].append(new_instance)
+        r = requests.post(
+            url=f"{self.base_url}/repositories/{repo_id}/resources/{resource_id}",
+            headers=self.headers,
+            data=json.dumps(existing_collection),
+        )
+        return r.json()
+
 
 class DigitalObject(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
@@ -271,4 +308,4 @@ class FileVersion:
 
 
 if __name__ == "__main__":
-    print(Resource().get(2, 299))
+    print(Resource().link_digital_object(2, 18, 2))
