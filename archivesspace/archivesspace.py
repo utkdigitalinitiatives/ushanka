@@ -49,6 +49,27 @@ class Accession(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
+    def get(self, repo_id, accession_id):
+        """Get a specific accession.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            accession_id (int): The id of the accession you are requesting.
+
+        Returns:
+            dict: A dict representing your resource.
+
+        Examples:
+            >>> Accession().get(2, 1)
+            {'error': 'Resource not found'}
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/accessions/{accession_id}",
+            headers=self.headers,
+        )
+        return r.json()
+
     def get_list_of_ids(self, repo_id):
         """Get a list of ids for Accessions in a Repository.
 
@@ -359,10 +380,4 @@ class FileVersion:
 
 
 if __name__ == "__main__":
-    print(
-        DigitalObject().add_badge(
-            2,
-            2,
-            "https://digital.lib.utk.edu/collections/islandora/object/knoxgardens%3A115/datastream/TN",
-        )
-    )
+    print(Accession().get(2, 1))
