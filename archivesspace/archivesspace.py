@@ -117,6 +117,59 @@ class Resource(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
+    def create(self, repo_id, title, manuscript_id):
+        """Create a resource / finding aid.
+
+        Args:
+            repo_id (int): The id for the repository.
+            title (str): The title of your resource / finding aid.
+            manuscript_id (str): The id for your finding aid.
+
+        Returns:
+            dict: Metadata and messaging stating whether your resource was created successfully or failed.
+
+        Examples:
+            >>> Resource().create(2, "Test finding aid", "MS.9999999")
+
+        @todo: Currently only throws errors due to date and extent.
+
+        """
+        initial = {
+            "jsonmodel_type": "resource",
+            "external_ids": [],
+            "subjects": [],
+            "linked_events": [],
+            "extents": [],
+            "lang_materials": [],
+            "dates": [],
+            "external_documents": [],
+            "rights_statements": [],
+            "linked_agents": [],
+            "is_slug_auto": True,
+            "restrictions": False,
+            "revision_statements": [],
+            "instances": [],
+            "deaccessions": [],
+            "related_accessions": [],
+            "classifications": [],
+            "notes": [],
+            "title": title,
+            "id_0": manuscript_id,
+            "level": "item",
+            "finding_aid_date": "",
+            "finding_aid_series_statement": "",
+            "finding_aid_language": "",
+            "finding_aid_script": "",
+            "finding_aid_note": "",
+            "ead_location": "",
+        }
+        r = requests.post(
+            url=f"{self.base_url}/repositories/{repo_id}/resources",
+            headers=self.headers,
+            data=json.dumps(initial),
+        )
+        return r.json()
+
     def get_list_of_ids(self, repo_id):
         """Get a list of ids for Resources in a Repository.
 
@@ -431,5 +484,55 @@ class FileVersion:
         }
 
 
+class Extent:
+    def __init__(self, number, type_of_unit, portion="whole"):
+        self.valid_portions = ("whole", "part")
+        self.valid_extent_type = (
+            "cassettes",
+            "cubic feet",
+            "gigabytes",
+            "megabytes",
+            "terrabytes",
+            "leaves",
+            "linear feet",
+            "photographic prints",
+            "photographic slides",
+            "reels",
+            "sheets",
+            "volumes",
+            "boxes",
+            "files",
+        )
+        self.information = self.create(number, type_of_unit, portion)
+
+    def create(self, number, type_of_unit, portion):
+        """Creates extent information following the ArchivesSpace schema.
+
+        Schema described here: https://github.com/archivesspace/archivesspace/blob/82c4603fe22bf0fd06043974478d4caf26e1c646/common/schemas/extent.rb
+
+        Args:
+            number (str): A numeric value for indicating the number of units in the extent statement, e.g, 5, 11.5, 245.
+                Used in conjunction with Extent Type to provide a structured extent statement.
+            type_of_unit (str): A term indicating the type of unit used to measure the extent of materials described.
+            portion (str): Used to specify whether an extent statement relates to the whole or part of a given described.
+
+        Returns:
+            dict: The appropriate extent information following the ArchivesSpace schema.
+
+        Examples:
+            >>> Extent().create(number="35", type_of_unit="files", portion="whole")
+
+        """
+        if portion in self.valid_portions and type_of_unit in self.valid_extent_type:
+            return {
+                "jsonmodel_type": "extent",
+                "portion": portion,
+                "number": number,
+                "extent_type": type_of_unit,
+            }
+        else:
+            raise Exception("Invalid extent information.")
+
+
 if __name__ == "__main__":
-    print(ArchivalObject().get(2, 37371))
+    print(Resource().create(2, "Test finding aid", "MS.9999999"))
