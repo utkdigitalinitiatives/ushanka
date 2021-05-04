@@ -117,7 +117,7 @@ class Resource(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
-    def create(self, repo_id, title, manuscript_id):
+    def create(self, repo_id, title, manuscript_id, extents=[]):
         """Create a resource / finding aid.
 
         Args:
@@ -139,7 +139,7 @@ class Resource(ArchiveSpace):
             "external_ids": [],
             "subjects": [],
             "linked_events": [],
-            "extents": [],
+            "extents": extents,
             "lang_materials": [],
             "dates": [],
             "external_documents": [],
@@ -485,7 +485,7 @@ class FileVersion:
 
 
 class Extent:
-    def __init__(self, number, type_of_unit, portion="whole"):
+    def __init__(self):
         self.valid_portions = ("whole", "part")
         self.valid_extent_type = (
             "cassettes",
@@ -503,9 +503,8 @@ class Extent:
             "boxes",
             "files",
         )
-        self.information = self.create(number, type_of_unit, portion)
 
-    def create(self, number, type_of_unit, portion):
+    def create(self, number, type_of_unit, portion, container_summary="", physical_details="", dimensions=""):
         """Creates extent information following the ArchivesSpace schema.
 
         Schema described here: https://github.com/archivesspace/archivesspace/blob/82c4603fe22bf0fd06043974478d4caf26e1c646/common/schemas/extent.rb
@@ -520,19 +519,29 @@ class Extent:
             dict: The appropriate extent information following the ArchivesSpace schema.
 
         Examples:
-            >>> Extent().create(number="35", type_of_unit="files", portion="whole")
+            >>> Extent().create(number="35", type_of_unit="cassettes", portion="whole")
+            {"jsonmodel_type": "extent", "portion": "whole", "number": "35", "extent_type": "cassettes",}
 
         """
         if portion in self.valid_portions and type_of_unit in self.valid_extent_type:
-            return {
+            model = {
                 "jsonmodel_type": "extent",
                 "portion": portion,
                 "number": number,
                 "extent_type": type_of_unit,
             }
+            if container_summary != "":
+                model["container_summary"] = container_summary
+            if physical_details != "":
+                model["physical_details"] = physical_details
+            if dimensions != "":
+                model["dimensions"] = dimensions
+            return model
+
         else:
             raise Exception("Invalid extent information.")
 
 
 if __name__ == "__main__":
-    print(Resource().create(2, "Test finding aid", "MS.9999999"))
+    extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
+    print(Resource().create(2, "Test finding aid", "MS.9999999", extents))
