@@ -366,6 +366,58 @@ class DigitalObject(ArchiveSpace):
         return r.json()
 
 
+class ArchivalObject(ArchiveSpace):
+    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+        super().__init__(url, user, password)
+
+    def get(self, repo_id, archival_object_id):
+        """Get an archival object by id.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            archival_object_id (int): The id of the archival object you want.
+
+        Returns:
+            dict: The archival object as a dict.
+
+        Examples:
+            >>> ArchivalObject().get(2, 37371)
+            {'lock_version': 0, 'position': 0, 'publish': True, 'ref_id': 'ref13_6ap', 'title':
+            '<title ns2:type="simple" render="doublequote">As You Came from the Holy Land,</title>', 'display_string':
+            '<title ns2:type="simple" render="doublequote">As You Came from the Holy Land,</title>, undated',
+            'restrictions_apply': False, 'created_by': 'admin', 'last_modified_by': 'admin', 'create_time':
+            '2019-08-08T20:19:18Z', 'system_mtime': '2020-12-02T17:04:13Z', 'user_mtime': '2019-08-08T20:19:18Z',
+            'suppressed': False, 'level': 'file', 'jsonmodel_type': 'archival_object', 'external_ids': [{'external_id':
+            '209519', 'source': 'Archivists Toolkit Database::RESOURCE_COMPONENT', 'created_by': 'admin',
+            'last_modified_by': 'admin', 'create_time': '2019-08-08T20:19:19Z', 'system_mtime': '2019-08-08T20:19:19Z',
+            'user_mtime': '2019-08-08T20:19:19Z', 'jsonmodel_type': 'external_id'}], 'subjects': [], 'linked_events':
+            [], 'extents': [], 'dates': [{'lock_version': 0, 'expression': 'undated', 'created_by': 'admin',
+            'last_modified_by': 'admin', 'create_time': '2019-08-08T20:19:18Z', 'system_mtime': '2019-08-08T20:19:18Z',
+            'user_mtime': '2019-08-08T20:19:18Z', 'date_type': 'single', 'label': 'creation', 'jsonmodel_type': 'date'}
+            ], 'external_documents': [], 'rights_statements': [], 'linked_agents': [], 'ancestors': [{'ref':
+            '/repositories/2/archival_objects/37369', 'level': 'series'}, {'ref': '/repositories/2/resources/598',
+            'level': 'collection'}], 'instances': [{'lock_version': 0, 'created_by': 'admin', 'last_modified_by':
+            'admin', 'create_time': '2019-08-08T20:19:19Z', 'system_mtime': '2019-08-08T20:19:19Z', 'user_mtime':
+            '2019-08-08T20:19:19Z', 'instance_type': 'mixed_materials', 'jsonmodel_type': 'instance',
+            'is_representative': False, 'sub_container': {'lock_version': 0, 'indicator_2': '1', 'created_by': 'admin',
+            'last_modified_by': 'admin', 'create_time': '2019-08-08T20:19:19Z', 'system_mtime': '2019-08-08T20:19:19Z',
+            'user_mtime': '2019-08-08T20:19:19Z', 'type_2': 'folder', 'jsonmodel_type': 'sub_container',
+            'top_container': {'ref': '/repositories/2/top_containers/2961'}}}], 'notes': [{'content': [
+            '(Labeled<emph render="doublequote">CP141- 3,</emph>i.e. Collected Poems, Robert Fitzgerald, ed., p. 141)'],
+             'jsonmodel_type': 'note_singlepart', 'label': 'General Physical Description note', 'type': 'physdesc',
+             'persistent_id': 'abf0fe13a03e23754e1faa666670442d', 'publish': True}], 'uri':
+             '/repositories/2/archival_objects/37371', 'repository': {'ref': '/repositories/2'}, 'resource': {'ref':
+             '/repositories/2/resources/598'}, 'parent': {'ref': '/repositories/2/archival_objects/37369'},
+             'has_unpublished_ancestor': False}
+
+        """
+        r = requests.get(
+            url=f"{self.base_url}/repositories/{repo_id}/archival_objects/{archival_object_id}",
+            headers=self.headers,
+        )
+        return r.json()
+
+
 class FileVersion:
     @staticmethod
     def add(uri, published=True, is_representative=True, show_attribute="new"):
@@ -380,4 +432,4 @@ class FileVersion:
 
 
 if __name__ == "__main__":
-    print(Accession().get(2, 1))
+    print(ArchivalObject().get(2, 37371))
