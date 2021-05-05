@@ -525,8 +525,7 @@ class Extent:
         Schema described here: https://github.com/archivesspace/archivesspace/blob/82c4603fe22bf0fd06043974478d4caf26e1c646/common/schemas/extent.rb
 
         Args:
-            number (str): A numeric value for indicating the number of units in the extent statement, e.g, 5, 11.5, 245.
-                Used in conjunction with Extent Type to provide a structured extent statement.
+            number (str): A numeric value for indicating the number of units in the extent statement, e.g, 5, 11.5, 245. Used in conjunction with Extent Type to provide a structured extent statement.
             type_of_unit (str): A term indicating the type of unit used to measure the extent of materials described.
             portion (str): Used to specify whether an extent statement relates to the whole or part of a given described.
 
