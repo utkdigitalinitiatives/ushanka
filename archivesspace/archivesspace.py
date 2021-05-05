@@ -117,21 +117,25 @@ class Resource(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
-    def create(self, repo_id, title, manuscript_id, extents=[]):
+    def create(self, repo_id, title, manuscript_id, extents=[], dates=[]):
         """Create a resource / finding aid.
+
+        @todo: Throws warning because we have no language currently
 
         Args:
             repo_id (int): The id for the repository.
             title (str): The title of your resource / finding aid.
             manuscript_id (str): The id for your finding aid.
+            extents (list): A list of Extents describing your resource.
+            dates (list): A list of DateModels describing your resource.
 
         Returns:
             dict: Metadata and messaging stating whether your resource was created successfully or failed.
 
         Examples:
-            >>> Resource().create(2, "Test finding aid", "MS.9999999")
-
-        @todo: Currently only throws errors due to date and extent.
+            >>> Resource().create(2, "Test finding aid", "MS.9999999", extents, dates)
+            {'status': 'Created', 'id': 20, 'lock_version': 0, 'stale': None, 'uri': '/repositories/2/resources/20',
+            'warnings': {'language': ['Property was missing']}}
 
         """
         initial = {
@@ -141,7 +145,7 @@ class Resource(ArchiveSpace):
             "linked_events": [],
             "extents": extents,
             "lang_materials": [],
-            "dates": [],
+            "dates": dates,
             "external_documents": [],
             "rights_statements": [],
             "linked_agents": [],
@@ -504,7 +508,15 @@ class Extent:
             "files",
         )
 
-    def create(self, number, type_of_unit, portion, container_summary="", physical_details="", dimensions=""):
+    def create(
+        self,
+        number,
+        type_of_unit,
+        portion,
+        container_summary="",
+        physical_details="",
+        dimensions="",
+    ):
         """Creates extent information following the ArchivesSpace schema.
 
         Schema described here: https://github.com/archivesspace/archivesspace/blob/82c4603fe22bf0fd06043974478d4caf26e1c646/common/schemas/extent.rb
@@ -542,6 +554,94 @@ class Extent:
             raise Exception("Invalid extent information.")
 
 
+class DateModel:
+    def __init__(self):
+        self.valid_labels = (
+            "agent_relation",
+            "broadcast",
+            "copyright",
+            "creation",
+            "deaccession",
+            "digitized",
+            "event",
+            "existence",
+            "issued",
+            "modified",
+            "other",
+            "publication",
+            "record_keeping",
+            "usage",
+        )
+        self.valid_types = ("bulk", "inclusive", "range", "single")
+        self.valid_certainties = ("approximate", "inferred", "questionable")
+
+    @staticmethod
+    def __check_for_a_value(beginning, ending, expression):
+        values = {}
+        if beginning == "" and ending == "" and expression == "":
+            raise Exception("Bad date. Must have a begin, end, or expression value.")
+        if beginning != "":
+            values["begin"] = beginning
+        if ending != "":
+            values["end"] = ending
+        if expression != "":
+            values["expression"] = expression
+        return values
+
+    def __test_type(self, date_type):
+        if date_type not in self.valid_types:
+            raise Exception(f"{date_type} is not a valid date type.")
+        return
+
+    def __test_label(self, date_label):
+        if date_label not in self.valid_labels:
+            raise Exception(f"{date_label} is not a valid date label.")
+        return
+
+    def __test_certainty(self, certainty):
+        if certainty not in self.valid_certainties:
+            raise Exception(f"{certainty} is not a valid date certainty.")
+        return
+
+    def create(self, date_type, label, certainty="", begin="", end="", expression=""):
+        """Creates a new DateModel for use in other classes.
+
+        Schema is found here: https://github.com/archivesspace/archivesspace/blob/82c4603fe22bf0fd06043974478d4caf26e1c646/common/schemas/date.rb
+
+        Args:
+            date_type (str): The type of date.  Must be a value in DateModel.valid_types.
+            label (str): The label for the date.  Must be a value in DateModel.valid_labels.
+            certainty (str): A certainty value for the date.  Optional, but must be in DateModel.valid_certainties if used.
+            begin (str): A beginning value.  Must have one or more of begin, end, or expression.
+            end (str): An ending value. Must have one or more of begin, end, or expression.
+            expression (str): A more open value type to express a date. Must have one or more of begin, end, or expression.
+
+        Returns:
+            dict: A dict representing your date.
+
+        Examples:
+            >>> DateModel().create(date_type="single", label="creation", begin="2002-03-14"))
+            {'jsonmodel_type': 'date', 'date_type': 'single', 'label': 'creation', 'era': 'ce', 'calendar': 'gregorian',
+            'begin': '2002-03-14'}
+
+        """
+        date_values = self.__check_for_a_value(begin, end, expression)
+        self.__test_label(label)
+        self.__test_type(date_type)
+        model = {
+            "jsonmodel_type": "date",
+            "date_type": date_type,
+            "label": label,
+            "era": "ce",
+            "calendar": "gregorian",
+        }
+        if certainty != "":
+            self.__test_certainty(certainty)
+            model["certainty"] = certainty
+        for key, value in date_values.items():
+            model[key] = value
+        return model
+
+
 if __name__ == "__main__":
-    extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
-    print(Resource().create(2, "Test finding aid", "MS.9999999", extents))
+    print(DateModel().create(date_type="single", label="creation", begin="2002-03-14"))
