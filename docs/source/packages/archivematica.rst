@@ -1,4 +1,4 @@
-archivesspace package
+archivematica package
 =====================
 
 Submodules
