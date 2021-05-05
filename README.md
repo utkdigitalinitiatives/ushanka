@@ -1,6 +1,9 @@
 # Ushanka
 
-This is a temporary repository for thinking about how to get a finalized AIP and DIP to our instance of Fedora.
+This is a fail-fast application to help us think about how to model AIPs and DIPs from Archivematica in Fedora, what
+our workflow for deposit may look like, and how to make our DIP discoverable in ArchivesSpace.
+
+Technical information is available on [readthedocs](https://ushanka.readthedocs.io/en/latest/).
 
 ## What is this supposed to do?
 
