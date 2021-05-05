@@ -117,7 +117,7 @@ class Resource(ArchiveSpace):
     def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
-    def create(self, repo_id, title, manuscript_id, extents=[], dates=[]):
+    def create(self, repo_id, title, manuscript_id, extents=[], dates=[], publish=False, level="collection"):
         """Create a resource / finding aid.
 
         @todo: Throws warning because we have no language currently
@@ -128,6 +128,8 @@ class Resource(ArchiveSpace):
             manuscript_id (str): The id for your finding aid.
             extents (list): A list of Extents describing your resource.
             dates (list): A list of DateModels describing your resource.
+            publish (bool): Should the resource be published to the PUI?
+            level (str): The type of resource it should be (collection, item, etc.)
 
         Returns:
             dict: Metadata and messaging stating whether your resource was created successfully or failed.
@@ -159,13 +161,14 @@ class Resource(ArchiveSpace):
             "notes": [],
             "title": title,
             "id_0": manuscript_id,
-            "level": "item",
+            "level": "collection",
             "finding_aid_date": "",
             "finding_aid_series_statement": "",
             "finding_aid_language": "",
             "finding_aid_script": "",
             "finding_aid_note": "",
             "ead_location": "",
+            "publish": publish
         }
         r = requests.post(
             url=f"{self.base_url}/repositories/{repo_id}/resources",
@@ -644,4 +647,6 @@ class DateModel:
 
 
 if __name__ == "__main__":
-    print(DateModel().create(date_type="single", label="creation", begin="2002-03-14"))
+    dates = [DateModel().create(date_type="single", label="creation", begin="2002-03-14")]
+    extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
+    print(Resource().create(2, "Test finding aid", "MS.99999990", extents, dates, publish=True))
