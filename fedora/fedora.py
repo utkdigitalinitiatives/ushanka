@@ -58,8 +58,7 @@ class FedoraObject:
             or the dsid (for internal relationships). For
             predicate (str): The predicate of the new relationship.
             obj (str): The object of the new relationship.  Can refer to a graph or a literal.
-            is_literal (str): This defaults to "true" but can also be "false." It specifies whether the object is a
-                graph or a literal.
+            is_literal (str): This defaults to "true" but can also be "false." It specifies whether the object is a graph or a literal.
 
         Returns:
             int: The status code of the post request.
@@ -130,8 +129,7 @@ class FedoraObject:
             pid (str): The persistent identifier to the object when you want to add a file.
             dsid (str): The datastream id to assign your new file.
             file (str): The path to your file.
-            versionable (str): Defaults to "true".  Specifies whether the datastream should have versioning ("true" or
-                "false").
+            versionable (str): Defaults to "true".  Specifies whether the datastream should have versioning ("true" or "false").
             datastream_state (str): Specify whether the datastream is active, inactive, or deleted.
             checksum_type (str): The checksum type to use.  Defaults to "DEFAULT". See API docs for options.
 
