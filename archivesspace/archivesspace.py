@@ -1,10 +1,17 @@
 import requests
 from uuid import uuid4
 import json
+import yaml
 
 
 class ArchiveSpace:
-    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+    """Base class for all ArchivesSpace Classes with methods built on requests.
+
+    Attributes:
+        base_url (str): The base_url of your ArchivesSpace API.
+        headers (dict): The HTTP header containing your authentication information.
+    """
+    def __init__(self, url="http://localhost:9089", user="admin", password="admin"):
         self.base_url = url
         self.headers = {"X-ArchivesSpace-Session": self.__authenticate(user, password)}
 
@@ -16,7 +23,8 @@ class ArchiveSpace:
 
 
 class Repository(ArchiveSpace):
-    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+    """Class for working with repositories in ArchivesSpace."""
+    def __init__(self, url="http://localhost:9089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
     def get(self, repo_id):
@@ -46,8 +54,19 @@ class Repository(ArchiveSpace):
 
 
 class Accession(ArchiveSpace):
-    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+    """Class for working with Accessions in ArchivesSpace."""
+    def __init__(self, url="http://localhost:9089", user="admin", password="admin"):
         super().__init__(url, user, password)
+
+    def create(self):
+        """Creates a new Accession.
+
+        Schema found here: https://github.com/archivesspace/archivesspace/blob/master/common/schemas/accession.rb
+
+        """
+        model = {
+            "jsonmodel_type": "accession",
+        }
 
     def get(self, repo_id, accession_id):
         """Get a specific accession.
@@ -114,7 +133,8 @@ class Accession(ArchiveSpace):
 
 
 class Resource(ArchiveSpace):
-    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+    """Class for working with Resources in ArchivesSpace."""
+    def __init__(self, url="http://localhost:9089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
     def create(self, repo_id, title, manuscript_id, extents=[], dates=[], publish=False, level="collection"):
@@ -135,7 +155,9 @@ class Resource(ArchiveSpace):
             dict: Metadata and messaging stating whether your resource was created successfully or failed.
 
         Examples:
-            >>> Resource().create(2, "Test finding aid", "MS.9999999", extents, dates)
+            >>> dates = [DateModel().create(date_type="single", label="creation", begin="2002-03-14")]
+            >>> extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
+            >>> Resource().create(2, "Test finding aid", "MS.9999999", extents, dates, publish=True)
             {'status': 'Created', 'id': 20, 'lock_version': 0, 'stale': None, 'uri': '/repositories/2/resources/20',
             'warnings': {'language': ['Property was missing']}}
 
@@ -161,7 +183,7 @@ class Resource(ArchiveSpace):
             "notes": [],
             "title": title,
             "id_0": manuscript_id,
-            "level": "collection",
+            "level": level,
             "finding_aid_date": "",
             "finding_aid_series_statement": "",
             "finding_aid_language": "",
@@ -279,7 +301,8 @@ class Resource(ArchiveSpace):
 
 
 class DigitalObject(ArchiveSpace):
-    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+    """Class for working with Digital Objects in ArchivesSpace."""
+    def __init__(self, url="http://localhost:9089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
     def get_list_of_ids(self, repo_id):
@@ -427,7 +450,8 @@ class DigitalObject(ArchiveSpace):
 
 
 class ArchivalObject(ArchiveSpace):
-    def __init__(self, url="http://localhost:8089", user="admin", password="admin"):
+    """Class for working with Archival Objects in ArchivesSpace."""
+    def __init__(self, url="http://localhost:9089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
     def get(self, repo_id, archival_object_id):
@@ -479,6 +503,7 @@ class ArchivalObject(ArchiveSpace):
 
 
 class FileVersion:
+    """Class for building FileVersion models to use with other classes that need them."""
     @staticmethod
     def add(uri, published=True, is_representative=True, show_attribute="new"):
         return {
@@ -492,6 +517,12 @@ class FileVersion:
 
 
 class Extent:
+    """Class for building Extent models for use with other ArchivesSpace classes.
+
+    Attributes:
+        valid_portions (tuple): A sequence of valid portion strings.
+        valid_extent_type (tuple): A sequence of valid extent types.
+    """
     def __init__(self):
         self.valid_portions = ("whole", "part")
         self.valid_extent_type = (
@@ -557,6 +588,13 @@ class Extent:
 
 
 class DateModel:
+    """Class for building DateModels for use in other ArchivesSpace classes.
+
+    Attributes:
+        valid_labels (tuple): A sequence of valid labels.
+        valid_types (tuple): A sequence of valid types.
+        valid_certainties (tuple): A sequence of valid certainties.
+    """
     def __init__(self):
         self.valid_labels = (
             "agent_relation",
@@ -646,6 +684,16 @@ class DateModel:
 
 
 if __name__ == "__main__":
-    dates = [DateModel().create(date_type="single", label="creation", begin="2002-03-14")]
+    # dates = [DateModel().create(date_type="single", label="creation", begin="2002-03-14")]
+    # extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
+    # print(Resource().create(2, "Test finding aid", "MS.99999990", extents, dates, publish=True))
+    # print(Accession().get(2, 1))
+    settings = yaml.safe_load(open('example.yml', 'r'))
+    finding_aid_data = settings['finding_aid']
+    dates = [DateModel().create(date_type="single", label="creation", begin=finding_aid_data['date']['begin'])]
     extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
-    print(Resource().create(2, "Test finding aid", "MS.99999990", extents, dates, publish=True))
+    #r = Resource(url="http://localhost:9089").create(2, "Chronicling Covid", "MS.99999990", extents, dates, publish=True)
+    #print(r)
+    #r = DigitalObject(url="http://localhost:9089").create("Creative Works", 2, file_versions=[FileVersion().add('http://localhost:8000/islandora/object/borndigital%3A3')])
+    r = Resource(url="http://localhost:9089").link_digital_object(2, 16, 1, is_representative=True)
+    print(r)
