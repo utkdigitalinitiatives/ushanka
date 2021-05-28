@@ -6,6 +6,7 @@ class DateModel:
         valid_types (tuple): A sequence of valid types.
         valid_certainties (tuple): A sequence of valid certainties.
     """
+
     def __init__(self):
         self.valid_labels = (
             "agent_relation",
@@ -122,13 +123,13 @@ class Extent:
         )
 
     def create(
-            self,
-            number,
-            type_of_unit,
-            portion,
-            container_summary="",
-            physical_details="",
-            dimensions="",
+        self,
+        number,
+        type_of_unit,
+        portion,
+        container_summary="",
+        physical_details="",
+        dimensions="",
     ):
         """Creates extent information following the ArchivesSpace schema.
 
@@ -168,6 +169,7 @@ class Extent:
 
 class FileVersion:
     """Class for building FileVersion models to use with other classes that need them."""
+
     @staticmethod
     def add(uri, published=True, is_representative=True, show_attribute="new"):
         return {
@@ -180,3 +182,22 @@ class FileVersion:
         }
 
 
+class LanguageOfMaterials:
+    """Class for building Language of Materials models to use with other classes that need them.
+
+    Currently, this is only used to bypass problems from ArchivesSpace. It's messy, bad, and encompasses multiple
+    ArchivesSpace models unlike other classes in this package.
+    """
+
+    def add(self, languages=["eng"]):
+        return [self.__append_language(language) for language in languages]
+
+    @staticmethod
+    def __append_language(language):
+        return {
+            "jsonmodel_type": "lang_material",
+            "language_and_script": {
+                "language": language,
+                "jsonmodel_type": "language_and_script",
+            },
+        }
