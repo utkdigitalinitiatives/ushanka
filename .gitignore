@@ -2,3 +2,9 @@
 fedora/__pycache__/*
 archivesspace/__pycache__/*
 .env
+doc.py
+sample_mets/*
+archivematica/__pycache__/*
+aspace_models/__pycache__/*
+data/*
+docs/build/*
