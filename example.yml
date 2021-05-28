@@ -1,0 +1,31 @@
+finding_aid:
+  title: Chronicling Covid # Use for title
+  identifier: AR.9999999999999 # Use for identifier
+  date:
+    label: creation
+    date_type: single
+    begin: "2021-05-26" # Must have a begin, end or expression.  Can have all 3.
+    end: "" # Must have a begin, end or expression.  Can have all 3.
+    expression: "" # Must have a begin, end or expression.  Can have all 3.
+  publish: False
+  # We technically need an extent, but we can use the DIP to populate this.
+
+packages:
+  - title: Creative Works
+    uuid: dfd8d1ea-e2b5-4068-8b72-160c80cc9020 # Use the UUID from the Ingest Tab
+    restrict: no
+    creator: ""
+    abstract: ""
+    rights: ""
+    language: ""
+    date: ""
+    publisher: ""
+  - title: Questionnaire
+    uuid: 86a498a7-3821-4c38-adf7-c96258e6fb10 # Use the UUID from the Ingest Tab
+    restrict: no
+    creator: ""
+    abstract: ""
+    rights: ""
+    language: ""
+    date: ""
+    publisher: ""
