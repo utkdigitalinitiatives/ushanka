@@ -3,6 +3,8 @@ from urllib.parse import quote
 import magic
 import os
 from fedora.metadata import MetadataBuilder, GSearchConnection
+import tarfile
+import shutil
 
 
 class FedoraObject:
@@ -266,6 +268,94 @@ class BornDigitalObject(FedoraObject):
         return pid
 
 
+class BornDigitalCompoundObject(BornDigitalObject):
+    def __init__(
+        self,
+        path,
+        namespace,
+        label,
+        collection,
+        state,
+        desriptive_metadata,
+        fedora="http://localhost:8080",
+        auth=("fedoraAdmin", "fedoraAdmin"),
+    ):
+        super().__init__(
+            path=path,
+            namespace=namespace,
+            fedora=fedora,
+            auth=auth,
+            label=label,
+            collection=collection,
+            state=state,
+            desriptive_metadata=desriptive_metadata,
+        )
+
+    def make_compound_object(self, pid):
+        """Assigns binary content model to digital object."""
+        return self.add_relationship(
+            pid,
+            f"info:fedora/{pid}",
+            "info:fedora/fedora-system:def/model#hasModel",
+            "info:fedora/islandora:islandora:compoundCModel",
+            is_literal="false",
+        )
+
+    def add_archival_information_package(self, pid):
+        """Adds the AIP to the OBJ datastream."""
+        # TODO: This will change.  For now, the idea is to assume that the OBJ is in an AIP directory on disk. This is
+        #       for demo purposes only. This will change once we know where the AIP will come from.
+        aip = ""
+        for path, directories, files in os.walk(f"{self.path}/AIP"):
+            aip = self.add_managed_datastream(pid, "AIP", f"{self.path}/AIP/{files[0]}")
+        if aip == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
+            )
+        return aip
+
+    def process_dip_as_binary(self):
+        return
+
+    def new(self):
+        pid = self.ingest(self.namespace, self.label, self.state)
+        self.add_to_collection(pid)
+        self.make_compound_object(pid)
+        self.change_versioning(pid, "RELS-EXT", "true")
+        self.add_archival_information_package(pid)
+        self.add_mods_metadata(pid)
+        self.add_dissemination_information_package(pid)
+        self.add_a_thumbnail(pid)
+
+
+class DIPPart:
+    def __init__(
+        self,
+        path,
+        namespace,
+        label,
+        collection,
+        state,
+        desriptive_metadata,
+        fedora="http://localhost:8080",
+        auth=("fedoraAdmin", "fedoraAdmin"),
+    ):
+        super().__init__(
+            path=path,
+            namespace=namespace,
+            fedora=fedora,
+            auth=auth,
+            label=label,
+            collection=collection,
+            state=state,
+            desriptive_metadata=desriptive_metadata,
+        )
+
+    def new(self):
+        pid = self.ingest(self.namespace, self.label, self.state)
+        self.add_to_collection(pid)
+
+
 if __name__ == "__main__":
     sample_metadata = {
         "title": "Chronocling Covid",
@@ -276,7 +366,7 @@ if __name__ == "__main__":
         "rights": "Copyright Not Evaluated",
     }
     print(
-        BornDigitalObject(
+        BornDigitalCompoundObject(
             "data/object_1", "test", "Testing", "islandora:test", "A", sample_metadata
         ).new()
     )
