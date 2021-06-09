@@ -323,8 +323,15 @@ class BornDigitalCompoundObject(BornDigitalObject):
                 f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
             )
         for part in dip.parts:
+            new_metadata = self.original_metadata
+            new_metadata['title'] = part.object
             new_part = DIPPart(
-                path= part.dip_location
+                path=part.dip_location,
+                namespace=self.namespace,
+                label=part.object,
+                collection=self.collection,
+                state=self.state,
+                desriptive_metadata=new_metadata
             )
         return
 
