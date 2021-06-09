@@ -314,7 +314,18 @@ class BornDigitalCompoundObject(BornDigitalObject):
             )
         return aip
 
-    def process_dip_as_binary(self):
+    def process_dip(self, pid):
+        dip = ""
+        for path, directories, files in os.walk(f"{self.path}/DIP"):
+            dip = DisseminationInformationPackage(f'{self.path}/DIP/{files[0]}')
+        if dip == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
+            )
+        for part in dip.parts:
+            new_part = DIPPart(
+                path= part.dip_location
+            )
         return
 
     def new(self):
@@ -328,7 +339,52 @@ class BornDigitalCompoundObject(BornDigitalObject):
         self.add_a_thumbnail(pid)
 
 
-class DIPPart:
+class DisseminationInformationPackage:
+    def __init__(self, path, extract_location="processing"):
+        self.path = path
+        self.extract_location = extract_location
+        self.extract_package()
+        self.contents = [thing for thing in os.walk(self.extract_location)]
+        self.dip_location = self.contents[1][0]
+        self.name = self.contents[0][1][0]
+        self.mets_location = [file for file in self.contents[1][2] if "METS" in file][0]
+        self.parts = [thing[2] for thing in self.contents if "/objects" in thing[0]][0]
+        self.thumbnails = [
+            thing[2] for thing in self.contents if "/thumbnails" in thing[0]
+        ][0]
+        self.ocr_files = [
+            thing[2] for thing in self.contents if "/OCRfiles" in thing[0]
+        ][0]
+        self.parts = self.associate_parts()
+
+    def extract_package(self):
+        dip = tarfile.open(self.path)
+        dip.extractall(self.extract_location)
+        dip.close()
+        return
+
+    def remove_extracted_package(self):
+        shutil.rmtree(self.extract_location)
+        return
+
+    def associate_parts(self):
+        dip_parts = []
+        for part in self.parts:
+            dip = {}
+            dip["uuid"] = part[:36]
+            dip["object"] = part
+            dip["location"] = self.dip_location
+            for ocr_file in self.ocr_files:
+                if dip["uuid"] in ocr_file:
+                    dip["ocr_file"] = ocr_file
+            for thumbnail in self.thumbnails:
+                if dip["uuid"] in thumbnail:
+                    dip["thumbnail"] = thumbnail
+            dip_parts.append(dip)
+        return dip_parts
+
+
+class DIPPart(BornDigitalObject):
     def __init__(
         self,
         path,
