@@ -333,6 +333,7 @@ class BornDigitalCompoundObject(BornDigitalObject):
                 state=self.state,
                 desriptive_metadata=new_metadata
             )
+        dip.remove_extracted_package()
         return
 
     def new(self):
