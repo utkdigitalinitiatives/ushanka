@@ -317,21 +317,22 @@ class BornDigitalCompoundObject(BornDigitalObject):
     def process_dip(self, pid):
         dip = ""
         for path, directories, files in os.walk(f"{self.path}/DIP"):
-            dip = DisseminationInformationPackage(f'{self.path}/DIP/{files[0]}')
+            dip = DisseminationInformationPackage(f"{self.path}/DIP/{files[0]}")
         if dip == "":
             raise Exception(
                 f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
             )
         for part in dip.parts:
             new_metadata = self.original_metadata
-            new_metadata['title'] = part.object
+            new_metadata["title"] = part.object
             new_part = DIPPart(
                 path=part.dip_location,
                 namespace=self.namespace,
                 label=part.object,
                 collection=self.collection,
                 state=self.state,
-                desriptive_metadata=new_metadata
+                desriptive_metadata=new_metadata,
+                part_package=part,
             )
         dip.remove_extracted_package()
         return
@@ -401,9 +402,13 @@ class DIPPart(BornDigitalObject):
         collection,
         state,
         desriptive_metadata,
+        part_package,
         fedora="http://localhost:8080",
         auth=("fedoraAdmin", "fedoraAdmin"),
     ):
+        self.part_package = part_package
+        self.thumbnail = self.__identify_thumbnail()
+        self.ocr = self.__identify_ocr()
         super().__init__(
             path=path,
             namespace=namespace,
@@ -414,6 +419,18 @@ class DIPPart(BornDigitalObject):
             state=state,
             desriptive_metadata=desriptive_metadata,
         )
+
+    def __identify_thumbnail(self):
+        if "thumbnail" in self.part_package.keys():
+            return self.part_package["thumbnail"]
+        else:
+            return ""
+
+    def __identify_ocr(self):
+        if "ocr" in self.part_package.keys():
+            return self.part_package["ocr"]
+        else:
+            return ""
 
     def new(self):
         pid = self.ingest(self.namespace, self.label, self.state)
