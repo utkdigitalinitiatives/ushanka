@@ -201,3 +201,28 @@ class LanguageOfMaterials:
                 "jsonmodel_type": "language_and_script",
             },
         }
+
+
+class ExternalIdentifer:
+    """Class for buidling External Identifiers in ArchivesSpae."""
+
+    @staticmethod
+    def add(id, source):
+        """Adds and external identifier.
+
+        Args:
+            id (str): The external identifier you are referencing.
+            source (str): Where the external identifier comes from.
+
+        Examples:
+            >>> ExternalIdentifer.add("209519", "Archivists Toolkit Database::RESOURCE_COMPONENT")
+            {"jsonmodel_type": "external_id", "external_id": "209519", "source": "Archivists Toolkit Database::RESOURCE_COMPONENT"}
+            >>> ExternalIdentifer.add("borndigital:8", "islandora")
+            {"jsonmodel_type": "external_id", "external_id": "borndigital:8", "source": "Islandora 7"}
+
+        """
+        return {
+            "jsonmodel_type": "external_id",
+            "external_id": id,
+            "source": source,
+        }
