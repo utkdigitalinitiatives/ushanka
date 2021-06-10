@@ -297,7 +297,7 @@ class BornDigitalCompoundObject(BornDigitalObject):
             pid,
             f"info:fedora/{pid}",
             "info:fedora/fedora-system:def/model#hasModel",
-            "info:fedora/islandora:islandora:compoundCModel",
+            "info:fedora/islandora:compoundCModel",
             is_literal="false",
         )
 
@@ -322,18 +322,22 @@ class BornDigitalCompoundObject(BornDigitalObject):
             raise Exception(
                 f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
             )
+        i = 1
         for part in dip.parts:
             new_metadata = self.original_metadata
-            new_metadata["title"] = part.object
-            new_part = DIPPart(
-                path=part.dip_location,
+            new_metadata["title"] = part["object"]
+            DIPPart(
+                path=part['location'],
                 namespace=self.namespace,
-                label=part.object,
+                label=part['object'][37:],
                 collection=self.collection,
                 state=self.state,
                 desriptive_metadata=new_metadata,
                 part_package=part,
-            )
+                parent_pid=pid,
+                sequence_number=i
+            ).new()
+            i += 1
         dip.remove_extracted_package()
         return
 
@@ -346,6 +350,7 @@ class BornDigitalCompoundObject(BornDigitalObject):
         self.add_mods_metadata(pid)
         self.add_dissemination_information_package(pid)
         self.add_a_thumbnail(pid)
+        self.process_dip(pid)
 
 
 class DisseminationInformationPackage:
@@ -403,10 +408,14 @@ class DIPPart(BornDigitalObject):
         state,
         desriptive_metadata,
         part_package,
+        parent_pid,
+        sequence_number,
         fedora="http://localhost:8080",
         auth=("fedoraAdmin", "fedoraAdmin"),
     ):
         self.part_package = part_package
+        self.parent_pid = parent_pid
+        self.sequence_number = sequence_number
         self.thumbnail = self.__identify_thumbnail()
         self.ocr = self.__identify_ocr()
         super().__init__(
@@ -428,13 +437,81 @@ class DIPPart(BornDigitalObject):
 
     def __identify_ocr(self):
         if "ocr" in self.part_package.keys():
-            return self.part_package["ocr"]
+            return self.part_package["ocr_file"]
         else:
             return ""
 
+    def make_part_of_compound_object(self, pid):
+        """Make part of parent compound object."""
+        return self.add_relationship(
+            pid,
+            f"info:fedora/{pid}",
+            "info:fedora/fedora-system:def/relations-external#isConstituentOf",
+            f"info:fedora/{self.parent_pid}",
+            is_literal="false",
+        )
+
+    def make_sequence_of_compound_object(self, pid):
+        """Make sequence number of parent compound object."""
+        return self.add_relationship(
+            pid,
+            f"info:fedora/{pid}",
+            f"http://islandora.ca/ontology/relsext#isSequenceNumberOf{self.parent_pid.replace(':', '_')}",
+            str(self.sequence_number),
+            is_literal="true",
+        )
+
+    def add_object_as_obj(self, pid):
+        """Adds the object to the OBJ datastream."""
+        obj = ""
+        path = f"{self.path}/objects/{self.part_package['object']}"
+        obj = self.add_managed_datastream(pid, "OBJ", path)
+        if obj == "":
+            raise Exception(
+                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}."
+            )
+        return obj
+
+    def add_thumbnail(self, pid):
+        """Adds the object to the TN datastream."""
+        tn = ""
+        if self.thumbnail != "":
+            path = f"{self.path}/thumbnails/{self.thumbnail}"
+            tn = self.add_managed_datastream(pid, "TN", path)
+            if tn == "":
+                raise Exception(
+                    f"\nFailed to create TN on {pid}. No file was found in {self.path}."
+                )
+            return tn
+        else:
+            return
+
+    def add_ocr(self, pid):
+        """Adds the object to the OCR datastream."""
+        ocr = ""
+        if self.ocr != "":
+            path = f"{self.path}/OCRfiles/{self.ocr}"
+            ocr = self.add_managed_datastream(pid, "OCR", path)
+            if ocr == "":
+                raise Exception(
+                    f"\nFailed to create TN on {pid}. No file was found in {self.path}."
+                )
+            return ocr
+        else:
+            return
+
     def new(self):
         pid = self.ingest(self.namespace, self.label, self.state)
+        print(pid)
         self.add_to_collection(pid)
+        self.assign_binary_content_model(pid)
+        self.change_versioning(pid, "RELS-EXT", "true")
+        self.make_part_of_compound_object(pid)
+        self.make_sequence_of_compound_object(pid)
+        self.add_mods_metadata(pid)
+        self.add_object_as_obj(pid)
+        self.add_thumbnail(pid)
+        self.add_ocr(pid)
 
 
 if __name__ == "__main__":
@@ -446,8 +523,21 @@ if __name__ == "__main__":
         "language": "English",
         "rights": "Copyright Not Evaluated",
     }
+    # print(
+    #     BornDigitalCompoundObject(
+    #         "data/object_1", "test", "Testing", "islandora:test", "A", sample_metadata
+    #     ).new()
+    # )
+    part_pack = {'location': "", 'uuid': 'b14c1eb1-5801-4833-b09a-efdccd2213b4', 'object': 'b14c1eb1-5801-4833-b09a-efdccd2213b4-Grocery_Run_-_Sarah_Ryan.jpg', 'thumbnail': 'b14c1eb1-5801-4833-b09a-efdccd2213b4.jpg'}
     print(
-        BornDigitalCompoundObject(
-            "data/object_1", "test", "Testing", "islandora:test", "A", sample_metadata
-        ).new()
+        DIPPart(
+            path=part_pack['location'],
+            namespace='test',
+            label='Testing',
+            collection='borndigital',
+            state='A',
+            desriptive_metadata=sample_metadata,
+            part_package=part_pack,
+            parent_pid='borndigital:8'
+        )
     )
