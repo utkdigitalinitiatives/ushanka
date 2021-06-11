@@ -531,6 +531,7 @@ class ArchivalObject(ArchiveSpace):
         ancestors=[],
         dates=[],
         extents=[],
+        parent="",
         level="series",
         restrictions_apply=False,
         publish=True,
@@ -553,6 +554,9 @@ class ArchivalObject(ArchiveSpace):
             >>> extents = [Extent().create(number="35", type_of_unit="files", portion="whole")]
             >>> ArchivalObject(url="http://localhost:9089").create(2, 118, title="Chronicling Covid: Creative Works", extents=extents, dates=dates, level="series", ancestors=[("/repositories/2/resources/598", "collection")],)
             {'status': 'Created', 'id': 13118, 'lock_version': 0, 'stale': True, 'uri': '/repositories/2/archival_objects/13118', 'warnings': []}
+            >>> extents = [Extent().create(number="1", type_of_unit="files", portion="whole"), Extent().create(number="0.12531", type_of_unit="megabytes", portion="whole")]
+            >>> ArchivalObject(url="http://localhost:9089").create(2, 118, title="Market_Square_on_Saturday_-_Sarah_Ryan.jpg", extents=extents, dates=dates, level="file", ancestors=[("/repositories/2/resources/598", "collection"), ('/repositories/2/archival_objects/13119', 'series')], parent="13119")
+            {'status': 'Created', 'id': 13121, 'lock_version': 0, 'stale': True, 'uri': '/repositories/2/archival_objects/13121', 'warnings': []}
 
         """
         initial_object = {
@@ -566,6 +570,10 @@ class ArchivalObject(ArchiveSpace):
             "extents": extents,
             "publish": publish,
         }
+        if parent != "":
+            initial_object["parent"] = {
+                "ref": f"/repositories/{repo_id}/archival_objects/{parent}"
+            }
         r = requests.post(
             url=f"{self.base_url}/repositories/{repo_id}/archival_objects",
             headers=self.headers,
@@ -592,7 +600,6 @@ class ArchivalObject(ArchiveSpace):
         return r.json()
 
 
-
 if __name__ == "__main__":
     # dates = [DateModel().create(date_type="single", label="creation", begin="2002-03-14")]
     # extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
@@ -609,24 +616,33 @@ if __name__ == "__main__":
             begin=finding_aid_data["date"]["begin"],
         )
     ]
-    extents = [Extent().create(number="35", type_of_unit="files", portion="whole")]
     # r = Resource(url="http://localhost:9089").create(2, "Chronicling Covid", "MS.99999990", extents, dates, publish=True)
     # print(r)
     # r = Resource().get(2, 2)
 
     # Series creation example
-    # r = ArchivalObject(url="http://localhost:9089").create(
-    #     2,
-    #     118,
-    #     title="Chronicling Covid: Creative Works",
-    #     extents=extents,
-    #     dates=dates,
-    #     level="series",
-    #     ancestors=[("/repositories/2/resources/598", "collection")],
-    # )
-    # print(r)
-    r = ArchivalObject(url="http://localhost:9089").delete(2, 13118)
+    extents = [
+        Extent().create(number="1", type_of_unit="files", portion="whole"),
+        Extent().create(number="0.12531", type_of_unit="megabytes", portion="whole"),
+    ]
+    r = ArchivalObject(url="http://localhost:9089").create(
+        2,
+        118,
+        title="Market_Square_on_Saturday_-_Sarah_Ryan.jpg",
+        extents=extents,
+        dates=dates,
+        level="file",
+        ancestors=[
+            ("/repositories/2/resources/598", "collection"),
+            ("/repositories/2/archival_objects/13119", "series"),
+        ],
+        parent="13119",
+    )
     print(r)
+
+    # Delete Archival Object
+    # r = ArchivalObject().delete(2, 13120)
+    # print(r)
 
     # r = DigitalObject(url="http://localhost:9089").create("Creative Works", 2, file_versions=[FileVersion().add('http://localhost:8000/islandora/object/borndigital%3A3')])
     # r = Resource(url="http://localhost:9089").link_digital_object(2, 16, 1, is_representative=True)
