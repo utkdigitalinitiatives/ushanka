@@ -573,6 +573,25 @@ class ArchivalObject(ArchiveSpace):
         )
         return r.json()
 
+    def delete(self, repo_id, archival_object_id):
+        """Deletes an Archival Object.
+
+        Args:
+            repo_id (int): The repo id to which the archival object belongs.
+            archival_object_id (int): The id of the archival object.
+
+        Examples:
+            >>> ArchivalObject(url="http://localhost:9089").delete(2, 13118)
+            {'status': 'Deleted', 'id': 13118}
+
+        """
+        r = requests.delete(
+            url=f"{self.base_url}/repositories/{repo_id}/archival_objects/{archival_object_id}",
+            headers=self.headers,
+        )
+        return r.json()
+
+
 
 if __name__ == "__main__":
     # dates = [DateModel().create(date_type="single", label="creation", begin="2002-03-14")]
@@ -606,7 +625,7 @@ if __name__ == "__main__":
     #     ancestors=[("/repositories/2/resources/598", "collection")],
     # )
     # print(r)
-    r = ArchivalObject(url="http://localhost:9089").get(2, 13118)
+    r = ArchivalObject(url="http://localhost:9089").delete(2, 13118)
     print(r)
 
     # r = DigitalObject(url="http://localhost:9089").create("Creative Works", 2, file_versions=[FileVersion().add('http://localhost:8000/islandora/object/borndigital%3A3')])
