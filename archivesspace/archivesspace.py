@@ -471,6 +471,11 @@ class ArchivalObject(ArchiveSpace):
     def __init__(self, url="http://localhost:9089", user="admin", password="admin"):
         super().__init__(url, user, password)
 
+    @staticmethod
+    def __process_ancestors(ancestors):
+        """Takes in a list of tuples and returns ancestors appropriately."""
+        return [{"ref": ancestor[0], "level": ancestor[1]} for ancestor in ancestors]
+
     def get(self, repo_id, archival_object_id):
         """Get an archival object by id.
 
@@ -518,12 +523,64 @@ class ArchivalObject(ArchiveSpace):
         )
         return r.json()
 
+    def create(
+        self,
+        repo_id,
+        parent_resource,
+        title,
+        ancestors=[],
+        dates=[],
+        extents=[],
+        level="series",
+        restrictions_apply=False,
+        publish=True,
+    ):
+        """Creates a new Archival Object.
+
+        Args:
+            repo_id (int): The repository id as an it.
+            parent_resource (int): The resource this object belongs to as an int.
+            title (str): The title of your archival object.
+            ancestors (list): A list of ancestors as tuples with the uri to the resource in index 0 and the level as index 1.
+            dates (list): A list of Dates.
+            extents (list): A list of Extents.
+            level (str): The level of the archival object.
+            restrictions_apply (bool): Whether or not restrictions apply.
+            publish (bool): Whether or not to publish.
+
+        Examples:
+            >>> dates = [DateModel().create(date_type="single", label="creation", begin=finding_aid_data["date"]["begin"],)]
+            >>> extents = [Extent().create(number="35", type_of_unit="files", portion="whole")]
+            >>> ArchivalObject(url="http://localhost:9089").create(2, 118, title="Chronicling Covid: Creative Works", extents=extents, dates=dates, level="series", ancestors=[("/repositories/2/resources/598", "collection")],)
+            {'status': 'Created', 'id': 13118, 'lock_version': 0, 'stale': True, 'uri': '/repositories/2/archival_objects/13118', 'warnings': []}
+
+        """
+        initial_object = {
+            "jsonmodel_type": "archival_object",
+            "resource": {"ref": f"/repositories/{repo_id}/resources/{parent_resource}"},
+            "level": level,
+            "restrictions_apply": restrictions_apply,
+            "title": title,
+            "ancestors": self.__process_ancestors(ancestors),
+            "dates": dates,
+            "extents": extents,
+            "publish": publish,
+        }
+        r = requests.post(
+            url=f"{self.base_url}/repositories/{repo_id}/archival_objects",
+            headers=self.headers,
+            data=json.dumps(initial_object),
+        )
+        return r.json()
+
 
 if __name__ == "__main__":
     # dates = [DateModel().create(date_type="single", label="creation", begin="2002-03-14")]
     # extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
     # print(Resource().create(2, "Test finding aid", "MS.99999990", extents, dates, publish=True))
     # print(Accession().get(2, 1))
+
+    # Where I left off with Finding Aids
     settings = yaml.safe_load(open("example.yml", "r"))
     finding_aid_data = settings["finding_aid"]
     dates = [
@@ -533,10 +590,25 @@ if __name__ == "__main__":
             begin=finding_aid_data["date"]["begin"],
         )
     ]
-    extents = [Extent().create(number="35", type_of_unit="cassettes", portion="whole")]
-    r = Resource(url="http://localhost:9089").create(2, "Chronicling Covid", "MS.99999990", extents, dates, publish=True)
-    #r = Resource().get(2, 2)
+    extents = [Extent().create(number="35", type_of_unit="files", portion="whole")]
+    # r = Resource(url="http://localhost:9089").create(2, "Chronicling Covid", "MS.99999990", extents, dates, publish=True)
+    # print(r)
+    # r = Resource().get(2, 2)
+
+    # Series creation example
+    # r = ArchivalObject(url="http://localhost:9089").create(
+    #     2,
+    #     118,
+    #     title="Chronicling Covid: Creative Works",
+    #     extents=extents,
+    #     dates=dates,
+    #     level="series",
+    #     ancestors=[("/repositories/2/resources/598", "collection")],
+    # )
+    # print(r)
+    r = ArchivalObject(url="http://localhost:9089").get(2, 13118)
     print(r)
+
     # r = DigitalObject(url="http://localhost:9089").create("Creative Works", 2, file_versions=[FileVersion().add('http://localhost:8000/islandora/object/borndigital%3A3')])
     # r = Resource(url="http://localhost:9089").link_digital_object(2, 16, 1, is_representative=True)
     # print(r)
