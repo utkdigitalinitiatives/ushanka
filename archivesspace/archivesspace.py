@@ -464,6 +464,27 @@ class DigitalObject(ArchiveSpace):
         )
         return r.json()
 
+    def delete(self, repo_id, digital_object_id):
+        """Delete an existing digital object.
+
+        Args:
+            repo_id (int): The id of the repository you are querying.
+            digital_object_id (int): The id of your digital object.
+
+        Returns:
+            dict: A message stating whether or not your delete was successful or an error.
+
+        Examples:
+            >>> DigitalObject(url="http://localhost:8089").create("Test", 2, file_versions=[FileVersion().add('http://localhost:8000/islandora/object/rfta:8')])
+            {'status': 'Deleted', 'id': 1}
+
+        """
+        r = requests.delete(
+            url=f"{self.base_url}/repositories/{repo_id}/digital_objects/{digital_object_id}",
+            headers=self.headers,
+        )
+        return r.json()
+
 
 class ArchivalObject(ArchiveSpace):
     """Class for working with Archival Objects in ArchivesSpace."""
