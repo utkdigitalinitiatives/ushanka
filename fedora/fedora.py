@@ -2,9 +2,81 @@ import requests
 from urllib.parse import quote
 import magic
 import os
-from fedora.metadata import MetadataBuilder, GSearchConnection
 import tarfile
 import shutil
+from dataclasses import dataclass
+from lxml import etree
+
+class GSearchConnection:
+    def __init__(
+        self, pid, url="http://localhost:8080", auth=("fedoraAdmin", "fedoraAdmin")
+    ):
+        self.url = (
+            f"{url}/fedoragsearch/rest?operation=updateIndex&action=fromPid&value={pid}"
+        )
+        self.auth = auth
+
+    def update(self):
+        r = requests.post(self.url, auth=self.auth)
+        return r.status_code
+
+@dataclass
+class MetadataBuilder:
+    label: str
+    original_metadata: dict
+    pid: str
+    uuid: str = ""
+    original_path: str = ""
+
+    @staticmethod
+    def __lookup_rights(rights):
+        valid_rights = {
+            "Copyright Not Evaluated": "http://rightsstatements.org/vocab/CNE/1.0/",
+            "Copyright Undetermined": "http://rightsstatements.org/vocab/UND/1.0/",
+            "No Known Copyright": "http://rightsstatements.org/vocab/NKC/1.0/",
+            "No Copyright - United States": "http://rightsstatements.org/vocab/NoC-US/1.0/",
+            "No Copyright - Other Known Legal Restrictions": "http://rightsstatements.org/vocab/NoC-OKLR/1.0/",
+            "No Copyright - Non-Commercial Use Only": "http://rightsstatements.org/vocab/NoC-NC/1.0/",
+            "No Copyright - Contractual Restrictions": "http://rightsstatements.org/vocab/NoC-CR/1.0/",
+            "In Copyright": "http://rightsstatements.org/vocab/InC/1.0/",
+            "In Copyright - EU Orphan Work": "http://rightsstatements.org/vocab/InC-OW-EU/1.0/",
+            "In Copyright - Educational Use Permitted": "http://rightsstatements.org/vocab/InC-EDU/1.0/",
+            "In Copyright - Non-Commercial Use Permitted": "http://rightsstatements.org/vocab/InC-NC/1.0/",
+            "In Copyright - Rights-holder(s) Unlocatable or Unidentifiable": "http://rightsstatements.org/vocab/InC-RUU/1.0/",
+        }
+        if rights in valid_rights:
+            return rights, valid_rights[rights]
+        else:
+            return (
+                "Copyright Not Evaluated",
+                "http://rightsstatements.org/vocab/CNE/1.0/",
+            )
+
+    def __check_title(self, title):
+        if title == "":
+            return self.label
+        else:
+            return title
+
+    def __check_identifier(self, identifier):
+        if identifier == "":
+            return ""
+        else:
+            return identifier
+
+    def build_mods(self):
+        rights = self.__lookup_rights(self.original_metadata["rights"])
+        title = self.__check_title(self.original_metadata["title"])
+        identifier = self.__check_identifier(self.original_metadata['identifier'])
+        mods_record = f"""<?xml version="1.0"?>\n<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">\n\t<titleInfo><title>{title.replace(self.original_metadata.get('uuid', ''), "")}</title></titleInfo>\n\t<identifier>{identifier}</identifier>\n\t<identifier type="uuid">{self.original_metadata.get('uuid', '')}</identifier><abstract>{self.original_metadata['abstract']}</abstract>\n\t<originInfo>\n\t\t<dateCreated>{self.original_metadata['date']}</dateCreated>\n\t\t<publisher>{self.original_metadata['publisher']}</publisher>\n\t</originInfo>\n\t<language>\n\t\t<languageTerm authority="iso639-2b" type="text">{self.original_metadata['language']}</languageTerm>\n\t</language>\n\t<accessCondition type="use and reproduction" xlink:href="{rights[1]}">{rights[0]}</accessCondition>\n<identifier type="pid">{self.pid}</identifier><note>{self.original_path}</note></mods>"""
+        with open("temp/MODS.xml", "w") as metadata:
+            metadata.write(mods_record)
+
+    def build_dc(self):
+        title = self.__check_title(self.original_metadata["title"])
+        dc_record = f"""<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">\n\t<dc:title>{title}</dc:title>\n\t<dc:description>{self.original_metadata['abstract']}</dc:description>\n\t<dc:date>{self.original_metadata['date']}</dc:date>\n\t<dc:rights>{self.original_metadata['rights']}</dc:rights>\n\t<dc:identifier>{self.original_metadata['identifier']}</dc:identifier></oai_dc:dc>"""
+        with open("temp/DC.xml", "w") as metadata:
+            metadata.write(dc_record)
 
 
 class FedoraObject:
@@ -235,7 +307,7 @@ class BornDigitalObject(FedoraObject):
             dip = self.add_managed_datastream(pid, "DIP", f"{self.path}/DIP/{files[0]}")
         if dip == "":
             raise Exception(
-                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/AIP/."
+                f"\nFailed to create OBJ on {pid}. No file was found in {self.path}/DIP/."
             )
         return dip
 
@@ -244,7 +316,7 @@ class BornDigitalObject(FedoraObject):
 
     def add_mods_metadata(self, pid):
         """Adds a MODS datastream."""
-        MetadataBuilder(self.label, self.original_metadata, pid).build_mods()
+        MetadataBuilder(self.label, self.original_metadata, pid, uuid="", original_path="").build_mods()
         response = self.add_managed_datastream(pid, "MODS", "temp/MODS.xml")
         if response == "":
             raise Exception(f"\nFailed to create MODS on {pid}.")
@@ -264,7 +336,7 @@ class BornDigitalObject(FedoraObject):
         self.add_archival_information_package(pid)
         self.add_mods_metadata(pid)
         self.add_dissemination_information_package(pid)
-        self.add_a_thumbnail(pid)
+        #self.add_a_thumbnail(pid)
         return pid
 
 
@@ -314,6 +386,16 @@ class BornDigitalCompoundObject(BornDigitalObject):
             )
         return aip
 
+    def add_mets(self, pid):
+        mets = ""
+        for path, directories, files in os.walk(f"{self.path}/METS"):
+            aip = self.add_managed_datastream(pid, "METS", f"{self.path}/METS/{files[0]}")
+        if aip == "":
+            raise Exception(
+                f"\nFailed to create METS on {pid}. No file was found in {self.path}/METS/."
+            )
+        return aip
+
     def process_dip(self, pid):
         dip = ""
         for path, directories, files in os.walk(f"{self.path}/DIP"):
@@ -326,6 +408,7 @@ class BornDigitalCompoundObject(BornDigitalObject):
         for part in dip.parts:
             new_metadata = self.original_metadata
             new_metadata["title"] = part["object"]
+            print(part)
             DIPPart(
                 path=part['location'],
                 namespace=self.namespace,
@@ -349,7 +432,8 @@ class BornDigitalCompoundObject(BornDigitalObject):
         self.add_archival_information_package(pid)
         self.add_mods_metadata(pid)
         self.add_dissemination_information_package(pid)
-        self.add_a_thumbnail(pid)
+        self.add_mets(pid)
+        #self.add_a_thumbnail(pid)
         self.process_dip(pid)
 
 
@@ -397,6 +481,35 @@ class DisseminationInformationPackage:
             dip_parts.append(dip)
         return dip_parts
 
+class METSSection:
+    def __init__(self, path, hash):
+        self.path = path
+        self.hash = hash
+        self.ns = {
+            'mets': 'http://www.loc.gov/METS/',
+            'premis': 'http://www.loc.gov/premis/v3'
+        }
+        self.root = self.__decode(path)
+        self.techmd = self.get_techmd()
+
+    @staticmethod
+    def __decode(path_to_file):
+        with open(path_to_file, 'rb') as xml:
+            return etree.parse(xml)
+
+    def get_techmd(self):
+        return [techmd for techmd in self.root.xpath(
+            f'//mets:xmlData[descendant::premis:objectIdentifierValue="{self.hash}"]',
+            namespaces=self.ns
+        )][0]
+
+    def get_original_path(self):
+        return [value.text.replace('%transferDirectory%objects/', '') for value in self.techmd.xpath('.//premis:originalName', namespaces=self.ns)][0]
+
+    def write_premis(self):
+        with open('temp_premis/premis.xml', 'w') as premis:
+            for node in self.get_techmd():
+                premis.write(etree.tostring(node, encoding='unicode', pretty_print=True))
 
 class DIPPart(BornDigitalObject):
     def __init__(
@@ -418,6 +531,7 @@ class DIPPart(BornDigitalObject):
         self.sequence_number = sequence_number
         self.thumbnail = self.__identify_thumbnail()
         self.ocr = self.__identify_ocr()
+        self.original_path = ""
         super().__init__(
             path=path,
             namespace=namespace,
@@ -500,6 +614,35 @@ class DIPPart(BornDigitalObject):
         else:
             return
 
+    def __do_techmd_things(self, pid):
+        x = METSSection("data/METS/METS.0a2f42cd-eede-477d-86a3-8ab84962c8c7.xml", self.part_package['uuid'])
+        self.original_path = x.get_original_path()
+        x.write_premis()
+        self.__add_premis(pid)
+        self.original_metadata['uuid'] = self.part_package['uuid']
+        self.original_metadata['original_path'] = self.original_path
+        return
+
+    def __add_premis(self, pid):
+        path = f"temp_premis/premis.xml"
+        ocr = self.add_managed_datastream(pid, "PREMIS", path)
+        if ocr == "":
+            raise Exception(
+                f"\nFailed to create PREMIS on {pid}. No file was found in {path}."
+            )
+        return ocr
+
+    def add_mods_metadata(self, pid):
+        """Adds a MODS datastream."""
+        MetadataBuilder(
+            self.label, self.original_metadata, pid, uuid=self.part_package['uuid'], original_path=self.original_path
+        ).build_mods()
+        response = self.add_managed_datastream(pid, "MODS", "temp/MODS.xml")
+        if response == "":
+            raise Exception(f"\nFailed to create MODS on {pid}.")
+        GSearchConnection(pid).update()
+        return
+
     def new(self):
         pid = self.ingest(self.namespace, self.label, self.state)
         print(pid)
@@ -508,6 +651,7 @@ class DIPPart(BornDigitalObject):
         self.change_versioning(pid, "RELS-EXT", "true")
         self.make_part_of_compound_object(pid)
         self.make_sequence_of_compound_object(pid)
+        self.__do_techmd_things(pid)
         self.add_mods_metadata(pid)
         self.add_object_as_obj(pid)
         self.add_thumbnail(pid)
@@ -516,28 +660,30 @@ class DIPPart(BornDigitalObject):
 
 if __name__ == "__main__":
     sample_metadata = {
-        "title": "Chronocling Covid",
-        "abstract": "This test deposit includes objects submitted as part of the Chronicling Covid-19 project.",
+        "title": "Chronicling Covid",
+        "abstract": f"Documentary project that includes online form questionnaires and digital and physical creative works submitted by student, faculty, and staff.",
+        "identifier": "AR-2022-002",
         "publisher": "University of Tennessee",
         "date": "2020",
         "language": "English",
         "rights": "Copyright Not Evaluated",
     }
+    print(
+        BornDigitalCompoundObject(
+            "data", "test", "Chronicling COVID-19: the UT Student & Campus Response to the Coronavirus", "islandora:test", "A", sample_metadata
+        ).new()
+    )
+    # part_pack = {'location': "", 'uuid': 'b14c1eb1-5801-4833-b09a-efdccd2213b4', 'object': 'b14c1eb1-5801-4833-b09a-efdccd2213b4-Grocery_Run_-_Sarah_Ryan.jpg', 'thumbnail': 'b14c1eb1-5801-4833-b09a-efdccd2213b4.jpg'}
     # print(
-    #     BornDigitalCompoundObject(
-    #         "data/object_1", "test", "Testing", "islandora:test", "A", sample_metadata
+    #     DIPPart(
+    #         path=part_pack['location'],
+    #         namespace='test',
+    #         label='Testing',
+    #         collection='borndigital',
+    #         state='A',
+    #         desriptive_metadata=sample_metadata,
+    #         part_package=part_pack,
+    #         parent_pid='borndigital:8',
+    #         sequence_number="1"
     #     ).new()
     # )
-    part_pack = {'location': "", 'uuid': 'b14c1eb1-5801-4833-b09a-efdccd2213b4', 'object': 'b14c1eb1-5801-4833-b09a-efdccd2213b4-Grocery_Run_-_Sarah_Ryan.jpg', 'thumbnail': 'b14c1eb1-5801-4833-b09a-efdccd2213b4.jpg'}
-    print(
-        DIPPart(
-            path=part_pack['location'],
-            namespace='test',
-            label='Testing',
-            collection='borndigital',
-            state='A',
-            desriptive_metadata=sample_metadata,
-            part_package=part_pack,
-            parent_pid='borndigital:8'
-        )
-    )
