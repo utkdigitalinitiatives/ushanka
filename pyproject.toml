@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "ushanka"
+version = "0.1.0"
+description = ""
+authors = ["Mark Baggett <mbagget1@utk.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.28.2"
+black = "^23.1.0"
+sphinxcontrib-mermaid = "^0.8.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

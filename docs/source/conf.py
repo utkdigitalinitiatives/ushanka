@@ -34,6 +34,7 @@ author = 'Mark Baggett'
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.todo",
+    'sphinxcontrib.mermaid',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

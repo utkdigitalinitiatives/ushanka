@@ -13,21 +13,9 @@ and our DIPs on to ArchivesSpace for discovery.
    :width: 400
    :alt: Ushanka Diagram
 
-API Docs
---------
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Contents:
+   :glob:
 
-   packages/archivematica
-   packages/archivesspace
-   packages/fedora
-
-
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   contents/*
