@@ -26,6 +26,8 @@ project = 'Ushanka'
 copyright = ''
 author = 'Mark Baggett'
 
+master_doc = 'index'
+
 
 # -- General configuration ---------------------------------------------------
 
