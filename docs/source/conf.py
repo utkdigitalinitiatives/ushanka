@@ -17,8 +17,6 @@ import archivematica
 import archivesspace
 import fedora
 import sphinx_rtd_theme
-import sphinxcontrib.mermaid
-
 
 # -- Project information -----------------------------------------------------
 
