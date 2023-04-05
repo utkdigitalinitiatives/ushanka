@@ -9,8 +9,11 @@ build:
 
 python:
   install:
-    - method: setuptools
+    - requirements: docs/requirements.txt
+    - method: pip
       path: .
+      extra_requirements:
+        - docs
 
 sphinx:
    configuration: docs/source/conf.py
