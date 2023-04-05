@@ -22,12 +22,13 @@ setup(
         "xmltodict>=0.13.0",
         "bitmath>=1.3.3.1",
         "pyyaml>=6.0",
-        "sphinxcontrib-mermaid>=0.8.1",
+        "sphinxcontrib-mermaid==0.8.1",
     ],
     extras_require={
         "docs": [
             "sphinx >= 5.0.2",
             "sphinx-rtd-theme >= 1.0.0",
+            "sphinxcontrib-mermaid==0.8.1",
         ]
     },
     classifiers=[
