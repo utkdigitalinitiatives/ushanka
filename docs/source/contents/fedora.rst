@@ -42,7 +42,7 @@ The METS file can be used with a service like <Mets Flask `http://bitarchivist.p
 
 The viewer can be used to understand all the files that were in the original SIP, and how they were organized.
 
-.. image:: ../images/mets_file.list.png
+.. image:: ../images/mets_file_list.png
 
 Technical metadata for each file can be accessed in the viewer.
 
