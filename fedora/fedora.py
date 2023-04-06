@@ -7,6 +7,7 @@ import shutil
 from dataclasses import dataclass
 from lxml import etree
 import humanize
+from lxml.builder import ElementMaker
 
 class GSearchConnection:
     def __init__(
@@ -21,13 +22,28 @@ class GSearchConnection:
         r = requests.post(self.url, auth=self.auth)
         return r.status_code
 
-@dataclass
+
 class MetadataBuilder:
-    label: str
-    original_metadata: dict
-    pid: str
-    uuid: str = ""
-    original_path: str = ""
+    def __init__(self, label: str, original_metadata: dict, pid: str, uuid: str = "", original_path: str = ""):
+        self.label = label
+        self.original_metadata = original_metadata
+        self.pid = pid
+        self.uuid = uuid
+        self.original_path = original_path
+        self.mods = self.__build_namespace("http://www.loc.gov/mods/v3", "mods")
+        self.dc = self.__build_namespace("http://purl.org/dc/elements/1.1/", "dc")
+        self.oai_dc = self.__build_namespace("http://www.openarchives.org/OAI/2.0/oai_dc/", "oai_dc")
+        self.xsi = self.__build_namespace("http://www.w3.org/2001/XMLSchema-instance", "xsi")
+        self.xlink = self.__build_namespace("http://www.w3.org/1999/xlink", "xlink")
+
+    @staticmethod
+    def __build_namespace(uri, short):
+        return ElementMaker(
+            namespace=uri,
+            nsmap={
+                short: uri
+            }
+        )
 
     @staticmethod
     def __lookup_rights(rights):
@@ -69,15 +85,72 @@ class MetadataBuilder:
         rights = self.__lookup_rights(self.original_metadata["rights"])
         title = self.__check_title(self.original_metadata["title"])
         identifier = self.__check_identifier(self.original_metadata['identifier'])
-        mods_record = f"""<?xml version="1.0"?>\n<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">\n\t<titleInfo><title>{title.replace(self.original_metadata.get('uuid', ''), "")}</title></titleInfo>\n\t<identifier>{identifier}</identifier>\n\t<identifier type="uuid">{self.original_metadata.get('uuid', '')}</identifier><abstract>{self.original_metadata['abstract']}</abstract>\n\t<originInfo>\n\t\t<dateCreated>{self.original_metadata['date']}</dateCreated>\n\t\t<publisher>{self.original_metadata['publisher']}</publisher>\n\t</originInfo>\n\t<physicalDescription>\n\t\t<extent>{self.original_metadata.get('size', '')}</extent>\n\t</physicalDescription>\n\t<language>\n\t\t<languageTerm authority="iso639-2b" type="text">{self.original_metadata['language']}</languageTerm>\n\t</language>\n\t<accessCondition type="use and reproduction" xlink:href="{rights[1]}">{rights[0]}</accessCondition>\n\t<identifier type="pid">{self.pid}</identifier>\n\t<note>{self.original_path}</note></mods>"""
-        with open("temp/MODS.xml", "w") as metadata:
-            metadata.write(mods_record)
+        xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
+        mods_record = self.mods.mods(
+            self.mods.titleInfo(
+                self.mods.title(
+                    title.replace(self.original_metadata.get('uuid', ''), "")
+                ),
+            ),
+            self.mods.identifier(identifier),
+            self.mods.identifier(
+                self.original_metadata.get('uuid', ''),
+                type="uuid"
+            ),
+            self.mods.identifier(
+                self.pid,
+                type="pid"
+            ),
+            self.mods.abstract(
+                self.original_metadata['abstract']
+            ),
+            self.mods.originInfo(
+                self.mods.dateCreated(
+                    self.original_metadata['date']
+                ),
+            ),
+            self.mods.physicalDescription(
+                self.mods.extent(
+                    self.original_metadata.get('size', '')
+                ),
+            ),
+            self.mods.language(
+                self.mods.languageTerm(
+                    "English",
+                    authority="iso639-2b",
+                    type="text"
+                )
+            ),
+            self.mods.accessCondition(
+                rights[0],
+                type="use and reproduction",
+            ),
+            self.mods.note(
+                self.original_path
+            )
+        )
+        mods_string = etree.tostring(mods_record, xml_declaration=xml_declaration, pretty_print=True)
+        with open("temp/MODS.xml", "wb") as metadata:
+            metadata.write(mods_string)
 
     def build_dc(self):
         title = self.__check_title(self.original_metadata["title"])
-        dc_record = f"""<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">\n\t<dc:title>{title}</dc:title>\n\t<dc:description>{self.original_metadata['abstract']}</dc:description>\n\t<dc:date>{self.original_metadata['date']}</dc:date>\n\t<dc:rights>{self.original_metadata['rights']}</dc:rights>\n\t<dc:identifier>{self.original_metadata['identifier']}</dc:identifier></oai_dc:dc>"""
+        identifier = self.__check_identifier(self.original_metadata['identifier'])
+        rights = self.__lookup_rights(self.original_metadata["rights"])
+        dc_record = self.oai_dc.dc(
+            self.dc.title(
+                title
+            ),
+            self.dc.identifier(
+                identifier
+            ),
+            self.dc.rights(
+                rights
+            )
+        )
+        dc_string = etree.tostring(dc_record, pretty_print=True)
         with open("temp/DC.xml", "w") as metadata:
-            metadata.write(dc_record)
+            metadata.write(dc_string)
 
 
 class FedoraObject:
