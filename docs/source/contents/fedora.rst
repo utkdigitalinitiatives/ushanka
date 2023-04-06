@@ -67,6 +67,8 @@ is prescribed with several datastreams, including:
 * PREMIS: This datastream contains the PREMIS file, which is a metadata file that describes the provenance of the DIP part.
 * POLICY: This datastream contains the policy file, which is a metadata file that describes the rights and access restrictions for the DIP part.
 * OBJ: This datastream contains the primary file from the DIP that the other files describe.
+* TN: If the OBJ is and image or image-like file, this datastream contains a thumbnail of the OBJ.
+* OCR: If the OBJ has searchable text, this datastream contains the OCR text so that it can be indexed by Solr.
 
 The relationships between the DIP part and its files can be understood with the following diagram:
 
@@ -85,3 +87,52 @@ The relationships between the DIP part and its files can be understood with the 
 It may be helpful to also look at how the DIP part is represented in Fedora:
 
 .. image:: ../images/dip_part_islandora.png
+
+The Premis and technical metadata for the DIP part is stored with it so that it can be indexed and understood. Example
+technical metadata may look like this:
+
+.. code:: xml
+
+    <System:FileSize>3.9 MB</System:FileSize>
+    <System:FileModifyDate>2020:04:28 14:52:40+00:00</System:FileModifyDate>
+    <System:FileAccessDate>2023:03:27 18:26:33+00:00</System:FileAccessDate>
+    <System:FileInodeChangeDate>2023:03:27 18:26:15+00:00</System:FileInodeChangeDate>
+    <System:FilePermissions>rw-rw-r--</System:FilePermissions>
+    <File:FileType>JPEG</File:FileType>
+    <File:FileTypeExtension>jpg</File:FileTypeExtension>
+    <File:MIMEType>image/jpeg</File:MIMEType>
+    <File:ExifByteOrder>Little-endian (Intel, II)</File:ExifByteOrder>
+    <File:CurrentIPTCDigest>5762ecb339369a69cfa111f6c4a4e78b</File:CurrentIPTCDigest>
+    <File:ImageWidth>5334</File:ImageWidth>
+    <File:ImageHeight>4000</File:ImageHeight>
+    <File:EncodingProcess>Baseline DCT, Huffman coding</File:EncodingProcess>
+    <File:BitsPerSample>8</File:BitsPerSample>
+    <File:ColorComponents>3</File:ColorComponents>
+    <File:YCbCrSubSampling>YCbCr4:4:4 (1 1)</File:YCbCrSubSampling>
+    <IFD0:Make>Canon</IFD0:Make>
+    <IFD0:Model>Canon EOS Rebel T6i</IFD0:Model>
+    <IFD0:Orientation>Horizontal (normal)</IFD0:Orientation>
+    <IFD0:XResolution>300</IFD0:XResolution>
+    <IFD0:YResolution>300</IFD0:YResolution>
+    <IFD0:ResolutionUnit>inches</IFD0:ResolutionUnit>
+    <IFD0:Software>Adobe Photoshop 21.1 (Macintosh)</IFD0:Software>
+    <IFD0:ModifyDate>2020:04:27 22:13:51</IFD0:ModifyDate>
+    <ExifIFD:ExposureTime>1/250</ExifIFD:ExposureTime>
+    <ExifIFD:FNumber>1.8</ExifIFD:FNumber>
+
+This file also contains important information about the provenance of the file, including the original path:
+
+.. code:: xml
+
+    <premis:originalName>
+        %transferDirectory%objects/Chronicling COVID-19_ Submission form for creative works (File responses)/Please upload your files here. You may upload up to 10 files. Please use the form again to submit additional files. (File responses)/Quarantine Birthday - Sarah Ryan.jpg
+    </premis:originalName>
+
+The original path can also be found in the MODS file to make the information easy for migration and reuse in ArchivesSpace.
+
+.. code:: xml
+
+    <note>
+        Chronicling COVID-19_ Submission form for creative works (File responses)/Please upload your files here. You may upload up to 10 files. Please use the form again to submit additional files. (File responses)/Quarantine Birthday - Sarah Ryan.jpg
+    </note>
+
