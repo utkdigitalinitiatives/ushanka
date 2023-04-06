@@ -1,14 +1,16 @@
 Digital Asset Management of Born Digital Materials
 ==================================================
 
-Once a SIP has been created with Archivematica, it is ready to be ingested into our digital asset management system.  This document describes its
-shape and relationships between the various parts.
+Once a SIP for a born digital object has been ingested into Archivematica and a corresponding AIP and DIP have been
+generated, it is ready to be ingested into our digital asset management system.  This document describes its shape and
+relationships between the various parts.
 
 The Compound Object
 -------------------
 
-The SIP is a compound object, which is a collection of related objects.  The compound object is the top-level object in
-the digital assets management system.  Each compound object is prescribed with several datastreams, including:
+The born digital object is a compound object, which is a collection of related objects.  The compound object is the
+top-level object in the digital assets management system.  Each compound object is prescribed with several datastreams,
+including:
 
 * MODS:  This metadata file contains basic descriptive information about the compound object, including title, identifier, date, and an abstract.
 * RELS-EXT:  This metadata file contains relationships between the compound object and other objects in the digital asset management system.
