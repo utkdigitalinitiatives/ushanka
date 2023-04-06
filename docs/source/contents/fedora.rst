@@ -18,6 +18,8 @@ the digital assets management system.  Each compound object is prescribed with s
 * METS: This datastream contains the METS file, which is a metadata file that describes the structure of the SIP, AIP, and DIP.
 * POLICY: This datastream contains the policy file, which is a metadata file that describes the rights and access restrictions for the compound object.
 
+The relationships between the compound object and its files can be understood with the following diagram:
+
 .. mermaid::
 
     erDiagram
@@ -30,8 +32,30 @@ the digital assets management system.  Each compound object is prescribed with s
         COMPOUNDOBJECT ||--o{ POLICY : has
         COMPOUNDOBJECT }|..|{ DIP-PART : contains
 
-The DIP Parts
--------------
+It may be helpful to also look at how the compound object is represented in Fedora:
+
+.. image:: ../images/compound_object_islandor.png
+
+The METS file can be used with a service like <Mets Flask `http://bitarchivist.pythonanywhere.com/`>_ to visualize the contents of the born digital object.
+
+.. image:: ../images/mets_visualization.png
+
+The viewer can be used to understand all the files that were in the original SIP, and how they were organized.
+
+.. image:: ../images/mets_file.list.png
+
+Technical metadata for each file can be accessed in the viewer.
+
+.. image:: ../images/techmd_part.png
+
+This section also includes an easy to read version of all Premis events that were performed on the file during processing:
+
+.. image:: ../images/premis_events.png
+
+Explanation of the DIP Parts that are associated with each compound object can be found in the next section.
+
+The DIP Part(s)
+---------------
 
 In order to enable any future access to files a part of the original SIP, the compound object is split into many DIP
 parts. Each DIP part is a work with its own descriptive metadata, relationships, and access restrictions.  Each DIP part
@@ -44,6 +68,8 @@ is prescribed with several datastreams, including:
 * POLICY: This datastream contains the policy file, which is a metadata file that describes the rights and access restrictions for the DIP part.
 * OBJ: This datastream contains the primary file from the DIP that the other files describe.
 
+The relationships between the DIP part and its files can be understood with the following diagram:
+
 .. mermaid::
 
     erDiagram
@@ -55,3 +81,7 @@ is prescribed with several datastreams, including:
         DIP-PART ||--o{ PREMIS : has
         DIP-PART ||--o{ POLICY : has
         DIP-PART ||--o{ OBJ : has
+
+It may be helpful to also look at how the DIP part is represented in Fedora:
+
+.. image:: ../images/dip_part_islandora.png
