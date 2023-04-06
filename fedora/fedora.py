@@ -6,6 +6,7 @@ import tarfile
 import shutil
 from dataclasses import dataclass
 from lxml import etree
+import humanize
 
 class GSearchConnection:
     def __init__(
@@ -68,7 +69,7 @@ class MetadataBuilder:
         rights = self.__lookup_rights(self.original_metadata["rights"])
         title = self.__check_title(self.original_metadata["title"])
         identifier = self.__check_identifier(self.original_metadata['identifier'])
-        mods_record = f"""<?xml version="1.0"?>\n<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">\n\t<titleInfo><title>{title.replace(self.original_metadata.get('uuid', ''), "")}</title></titleInfo>\n\t<identifier>{identifier}</identifier>\n\t<identifier type="uuid">{self.original_metadata.get('uuid', '')}</identifier><abstract>{self.original_metadata['abstract']}</abstract>\n\t<originInfo>\n\t\t<dateCreated>{self.original_metadata['date']}</dateCreated>\n\t\t<publisher>{self.original_metadata['publisher']}</publisher>\n\t</originInfo>\n\t<language>\n\t\t<languageTerm authority="iso639-2b" type="text">{self.original_metadata['language']}</languageTerm>\n\t</language>\n\t<accessCondition type="use and reproduction" xlink:href="{rights[1]}">{rights[0]}</accessCondition>\n<identifier type="pid">{self.pid}</identifier><note>{self.original_path}</note></mods>"""
+        mods_record = f"""<?xml version="1.0"?>\n<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-5.xsd">\n\t<titleInfo><title>{title.replace(self.original_metadata.get('uuid', ''), "")}</title></titleInfo>\n\t<identifier>{identifier}</identifier>\n\t<identifier type="uuid">{self.original_metadata.get('uuid', '')}</identifier><abstract>{self.original_metadata['abstract']}</abstract>\n\t<originInfo>\n\t\t<dateCreated>{self.original_metadata['date']}</dateCreated>\n\t\t<publisher>{self.original_metadata['publisher']}</publisher>\n\t</originInfo>\n\t<physicalDescription>\n\t\t<extent>{self.original_metadata.get('size', '')}</extent>\n\t</physicalDescription>\n\t<language>\n\t\t<languageTerm authority="iso639-2b" type="text">{self.original_metadata['language']}</languageTerm>\n\t</language>\n\t<accessCondition type="use and reproduction" xlink:href="{rights[1]}">{rights[0]}</accessCondition>\n\t<identifier type="pid">{self.pid}</identifier>\n\t<note>{self.original_path}</note></mods>"""
         with open("temp/MODS.xml", "w") as metadata:
             metadata.write(mods_record)
 
@@ -506,6 +507,12 @@ class METSSection:
     def get_original_path(self):
         return [value.text.replace('%transferDirectory%objects/', '') for value in self.techmd.xpath('.//premis:originalName', namespaces=self.ns)][0]
 
+    def get_date_created(self):
+        return [value.text for value in self.techmd.xpath('.//premis:dateCreatedByApplication', namespaces=self.ns)][0]
+
+    def get_size(self):
+        return [humanize.naturalsize(value.text) for value in self.techmd.xpath('.//premis:size', namespaces=self.ns)][0]
+
     def write_premis(self):
         with open('temp_premis/premis.xml', 'w') as premis:
             for node in self.get_techmd():
@@ -621,6 +628,8 @@ class DIPPart(BornDigitalObject):
         self.__add_premis(pid)
         self.original_metadata['uuid'] = self.part_package['uuid']
         self.original_metadata['original_path'] = self.original_path
+        self.original_metadata['size'] = x.get_size()
+        self.original_metadata['date'] = x.get_date_created()
         return
 
     def __add_premis(self, pid):
