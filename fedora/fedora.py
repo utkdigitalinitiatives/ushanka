@@ -136,7 +136,7 @@ class MetadataBuilder:
     def build_dc(self):
         title = self.__check_title(self.original_metadata["title"])
         identifier = self.__check_identifier(self.original_metadata['identifier'])
-        rights = self.__lookup_rights(self.original_metadata["rights"])
+        xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
         dc_record = self.oai_dc.dc(
             self.dc.title(
                 title
@@ -144,12 +144,18 @@ class MetadataBuilder:
             self.dc.identifier(
                 identifier
             ),
+            self.dc.identifier(
+                self.original_metadata.get('uuid', '')
+            ),
+            self.dc.identifier(
+                self.pid
+            ),
             self.dc.rights(
-                rights
+                "Copyright Not Evaluated"
             )
         )
-        dc_string = etree.tostring(dc_record, pretty_print=True)
-        with open("temp/DC.xml", "w") as metadata:
+        dc_string = etree.tostring(dc_record, xml_declaration=xml_declaration, pretty_print=True)
+        with open("temp/DC.xml", "wb") as metadata:
             metadata.write(dc_string)
 
 
@@ -317,6 +323,67 @@ class FedoraObject:
         else:
             raise Exception(
                 f"\nFailed to create {dsid} datastream on {pid} with {file} as content. Fedora returned this"
+                f"status code: {r.status_code}."
+            )
+
+    def modify_datastream(
+        self,
+        pid,
+        dsid,
+        file,
+        versionable="true",
+        datastream_state="A",
+        checksum_type="DEFAULT",
+    ):
+        """Modifies an internally managed datastream.
+
+        This is not a one to one vesion of addDatastream.  It has been stripped down to fit one use case: internally
+        managed content.  I'll add other methods if other use cases arise.
+
+        Args:
+            pid (str): The persistent identifier to the object when you want to add a file.
+            dsid (str): The datastream id to assign your new file.
+            file (str): The path to your file.
+            versionable (str): Defaults to "true".  Specifies whether the datastream should have versioning ("true" or "false").
+            datastream_state (str): Specify whether the datastream is active, inactive, or deleted.
+            checksum_type (str): The checksum type to use.  Defaults to "DEFAULT". See API docs for options.
+
+        Returns:
+            int: The http status code of the request.
+
+        Examples:
+            >>> FedoraObject().modify_datastream("test:10", "AIP", "my_aip.7z")
+            201
+
+        """
+        if checksum_type not in (
+            "DEFAULT",
+            "DISABLED",
+            "MD5",
+            "SHA-1",
+            "SHA-256",
+            "SHA-385",
+            "SHA-512",
+        ):
+            raise Exception(
+                f"\nInvalid checksum type specified for {pid} when adding the {dsid} datastream with {file}"
+                f"content.\nMust be one of: DEFAULT, DISABLED, MD5, SHA-1, SHA-256, SHA-385, SHA-512."
+            )
+        mime = magic.Magic(mime=True)
+        upload_file = {
+            "file": (file, open(file, "rb"), mime.from_file(file), {"Expires": "0"})
+        }
+        r = requests.post(
+            f"{self.fedora_url}/fedora/objects/{pid}/datastreams/{dsid}/?controlGroup=M&dsLabel={dsid}&versionable="
+            f"{versionable}&dsState={datastream_state}&checksumType={checksum_type}",
+            auth=self.auth,
+            files=upload_file,
+        )
+        if r.status_code == 201 or r.status_code == 200:
+            return r.status_code
+        else:
+            raise Exception(
+                f"\nFailed to modify {dsid} datastream on {pid} with {file} as content. Fedora returned this"
                 f"status code: {r.status_code}."
             )
 
@@ -716,10 +783,13 @@ class DIPPart(BornDigitalObject):
 
     def add_mods_metadata(self, pid):
         """Adds a MODS datastream."""
-        MetadataBuilder(
+        x = MetadataBuilder(
             self.label, self.original_metadata, pid, uuid=self.part_package['uuid'], original_path=self.original_path
-        ).build_mods()
+        )
+        x.build_mods()
+        x.build_dc()
         response = self.add_managed_datastream(pid, "MODS", "temp/MODS.xml")
+        self.modify_datastream(pid, "DC", "temp/DC.xml")
         if response == "":
             raise Exception(f"\nFailed to create MODS on {pid}.")
         GSearchConnection(pid).update()
@@ -752,7 +822,7 @@ if __name__ == "__main__":
     }
     print(
         BornDigitalCompoundObject(
-            "data", "test", "Chronicling COVID-19: the UT Student & Campus Response to the Coronavirus", "islandora:test", "A", sample_metadata
+            "data", "test", "Chronicling COVID-19: the UT Student and Campus Response to the Coronavirus", "islandora:test", "A", sample_metadata
         ).new()
     )
     # part_pack = {'location': "", 'uuid': 'b14c1eb1-5801-4833-b09a-efdccd2213b4', 'object': 'b14c1eb1-5801-4833-b09a-efdccd2213b4-Grocery_Run_-_Sarah_Ryan.jpg', 'thumbnail': 'b14c1eb1-5801-4833-b09a-efdccd2213b4.jpg'}
