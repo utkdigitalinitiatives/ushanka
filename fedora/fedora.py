@@ -89,7 +89,7 @@ class MetadataBuilder:
         mods_record = self.mods.mods(
             self.mods.titleInfo(
                 self.mods.title(
-                    title.replace(self.original_metadata.get('uuid', ''), "")
+                    title.replace(f'{self.original_metadata.get("uuid", "")}-', "")
                 ),
             ),
             self.mods.identifier(identifier),
@@ -139,7 +139,7 @@ class MetadataBuilder:
         xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>'
         dc_record = self.oai_dc.dc(
             self.dc.title(
-                title
+                title.replace(f'{self.original_metadata.get("uuid", "")}-', "")
             ),
             self.dc.identifier(
                 identifier
@@ -654,9 +654,14 @@ class METSSection:
         return [humanize.naturalsize(value.text) for value in self.techmd.xpath('.//premis:size', namespaces=self.ns)][0]
 
     def write_premis(self):
-        with open('temp_premis/premis.xml', 'w') as premis:
+        with open('temp_premis/premis.xml', 'wb') as premis:
             for node in self.get_techmd():
-                premis.write(etree.tostring(node, encoding='unicode', pretty_print=True))
+                premis_string = etree.tostring(node,
+                                   xml_declaration='<?xml version="1.0" encoding="UTF-8"?>',
+                                   pretty_print=True)
+                premis.write(
+                    premis_string
+                )
 
 class DIPPart(BornDigitalObject):
     def __init__(
