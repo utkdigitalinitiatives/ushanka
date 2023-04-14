@@ -530,7 +530,6 @@ class BornDigitalCompoundObject(BornDigitalObject):
         return aip
 
     def add_mets(self, pid):
-        mets = ""
         for path, directories, files in os.walk(f"{self.path}/METS"):
             aip = self.add_managed_datastream(pid, "METS", f"{self.path}/METS/{files[0]}")
         if aip == "":
@@ -582,6 +581,7 @@ class BornDigitalCompoundObject(BornDigitalObject):
         self.add_dissemination_information_package(pid)
         self.add_mets(pid)
         #self.add_a_thumbnail(pid)
+        self.add_managed_datastream(pid, "POLICY", "temp/POLICY.xml")
         self.process_dip(pid)
         self.write_spreadsheet()
 
@@ -829,6 +829,7 @@ class DIPPart(BornDigitalObject):
         self.add_object_as_obj(pid)
         self.add_thumbnail(pid)
         self.add_ocr(pid)
+        self.add_managed_datastream(pid, "POLICY", "temp/POLICY.xml")
         return pid
 
 
