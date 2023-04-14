@@ -4,10 +4,11 @@ import magic
 import os
 import tarfile
 import shutil
-from dataclasses import dataclass
 from lxml import etree
 import humanize
 from lxml.builder import ElementMaker
+import csv
+
 
 class GSearchConnection:
     def __init__(
@@ -503,6 +504,7 @@ class BornDigitalCompoundObject(BornDigitalObject):
             state=state,
             desriptive_metadata=desriptive_metadata,
         )
+        self.members = []
 
     def make_compound_object(self, pid):
         """Assigns binary content model to digital object."""
@@ -550,7 +552,7 @@ class BornDigitalCompoundObject(BornDigitalObject):
             new_metadata = self.original_metadata
             new_metadata["title"] = part["object"]
             print(part)
-            DIPPart(
+            part_pid = DIPPart(
                 path=part['location'],
                 namespace=self.namespace,
                 label=part['object'][37:],
@@ -561,6 +563,11 @@ class BornDigitalCompoundObject(BornDigitalObject):
                 parent_pid=pid,
                 sequence_number=i
             ).new()
+            self.members.append(
+                {'pid': part_pid,
+                 'what': new_metadata['title'].replace(f'{part["uuid"]}-', ''),
+                 'when': new_metadata['date']}
+            )
             i += 1
         dip.remove_extracted_package()
         return
@@ -576,6 +583,14 @@ class BornDigitalCompoundObject(BornDigitalObject):
         self.add_mets(pid)
         #self.add_a_thumbnail(pid)
         self.process_dip(pid)
+        self.write_spreadsheet()
+
+    def write_spreadsheet(self):
+        with open("temp/spreadsheet.csv", "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(["PID", "Title", "Date"])
+            for member in self.members:
+                writer.writerow([member['pid'], member['what'], member['when']])
 
 
 class DisseminationInformationPackage:
@@ -654,7 +669,7 @@ class METSSection:
         return [humanize.naturalsize(value.text) for value in self.techmd.xpath('.//premis:size', namespaces=self.ns)][0]
 
     def write_premis(self):
-        with open('temp_premis/premis.xml', 'wb') as premis:
+        with open('temp/premis.xml', 'wb') as premis:
             for node in self.get_techmd():
                 premis_string = etree.tostring(node,
                                    xml_declaration='<?xml version="1.0" encoding="UTF-8"?>',
@@ -662,6 +677,7 @@ class METSSection:
                 premis.write(
                     premis_string
                 )
+
 
 class DIPPart(BornDigitalObject):
     def __init__(
@@ -778,7 +794,7 @@ class DIPPart(BornDigitalObject):
         return
 
     def __add_premis(self, pid):
-        path = f"temp_premis/premis.xml"
+        path = f"temp/premis.xml"
         ocr = self.add_managed_datastream(pid, "PREMIS", path)
         if ocr == "":
             raise Exception(
@@ -813,6 +829,7 @@ class DIPPart(BornDigitalObject):
         self.add_object_as_obj(pid)
         self.add_thumbnail(pid)
         self.add_ocr(pid)
+        return pid
 
 
 if __name__ == "__main__":
